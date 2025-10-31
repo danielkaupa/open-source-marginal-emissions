@@ -1,0 +1,245 @@
+# ----------------------------------------------
+# LIBRARY IMPORTS
+# ----------------------------------------------
+
+import json
+import os
+from datetime import datetime
+
+# ----------------------------------------------
+# CONSTANTS AND SHARED VARIABLES
+# ----------------------------------------------
+
+# N/A
+
+# ----------------------------------------------
+# FUNCTION IMPORTS
+# ----------------------------------------------
+
+from weather_data_retrieval.sources.cds_era5 import orchestrate_cds_downloads
+from weather_data_retrieval.io.cli import run_prompt_wizard
+
+from weather_data_retrieval.utils.session_management import (
+    SessionState,
+    internet_speedtest,
+    map_config_to_session,
+)
+from weather_data_retrieval.utils.data_validation import (
+    format_coordinates_nwse,
+    validate_config,
+)
+from weather_data_retrieval.utils.file_management import (
+    generate_filename_hash,
+    estimate_cds_download,
+)
+from weather_data_retrieval.utils.logging import (
+    setup_logger,
+    build_download_summary,
+    log_msg,
+)
+from weather_data_retrieval.io.config_loader import (
+    load_and_validate_config,
+    load_config
+)
+
+# ----------------------------------------------
+# FUNCTION DEFINITIONS
+# ----------------------------------------------
+
+def run(
+        config: dict,
+        run_mode: str = "interactive",
+        verbose: bool = True,
+        logger=None
+        ) -> int:
+    """
+    Unified orchestration entry point for both interactive and automatic runs.
+    Handles validation, logging, estimation, and download orchestration.
+
+    Returns: 0=success, 1=fatal error, 2=some downloads failed.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary with all required parameters.
+    run_mode : str, optional
+        Run mode, either 'interactive' or 'automatic', by default "interactive".
+    logger : logging.Logger, optional
+        Pre-configured logger instance, by default None.
+
+    Returns
+    -------
+    int
+        Exit code: 0=success, 1=fatal error, 2=some downloads failed.
+    """
+
+    console_handler_active = (run_mode == "interactive") or verbose
+
+    def echo_only_if_no_console_handler(force: bool = False) -> bool:
+        # In automatic non-verbose mode, console handler is absent.
+        # Return True to echo only selected messages (summary, warnings/errors/exceptions).
+        return force and (not console_handler_active)
+
+    if logger is None:
+        logger = setup_logger(str(config.get("save_dir", ".")), run_mode=run_mode, verbose=verbose)
+
+    # Header
+    log_msg("=" * 60, logger, echo_console=echo_only_if_no_console_handler(False))
+    log_msg(f"Starting {run_mode.upper()} run at {datetime.now().isoformat()}",
+            logger, echo_console=echo_only_if_no_console_handler(False))
+    log_msg("=" * 60, logger, echo_console=echo_only_if_no_console_handler(False))
+
+    try:
+        # 1) Validate config
+        validate_config(config, logger=logger, run_mode=run_mode)
+        log_msg("Configuration validation successful.", logger, echo_console=echo_only_if_no_console_handler(False))
+
+        # 2) Map config → session
+        session = SessionState()
+        ok, notes = map_config_to_session(config, session)
+        for note in notes:
+            log_msg(note, logger, echo_console=echo_only_if_no_console_handler(False))
+        if not ok:
+            log_msg("Config mapping reported blocking issues. Exiting.",
+                    logger, level="error", echo_console=echo_only_if_no_console_handler(True))
+            return 1
+
+        # 2b) Automatic mode cannot be case-by-case for existing file policy (already coerced by validate_config)
+        # Nothing to do here; messages already logged.
+
+        # 3) Short internet speed test (both modes)
+        log_msg("Running short internet speed test...", logger, echo_console=echo_only_if_no_console_handler(False))
+        speed_mbps = internet_speedtest(test_urls=None, max_seconds=10)
+        log_msg(f"Detected speed: {speed_mbps:.1f} Mbps", logger, echo_console=echo_only_if_no_console_handler(False))
+
+        # 4) Estimate size/time
+        estimates = estimate_cds_download(
+            variables=session.get("variables"),
+            area=session.get("region_bounds"),
+            start_date=session.get("start_date"),
+            end_date=session.get("end_date"),
+            observed_speed_mbps=speed_mbps,
+        )
+
+        # Adjust for parallelisation — scale total_time_sec only
+        parallel_conf = session.get("parallel_settings")
+        if parallel_conf and parallel_conf.get("enabled"):
+            efficiency_factor = 0.60
+            max_conc = max(1, int(parallel_conf["max_concurrent"]))
+            estimates["total_time_sec"] = estimates["total_time_sec"] / (max_conc * efficiency_factor)
+            log_msg(
+                f"Adjusted total time for parallel downloads: {estimates['total_time_sec']:.1f} sec",
+                logger, echo_console=echo_only_if_no_console_handler(False)
+            )
+
+        # 5) Filename + hash
+        coord_str = format_coordinates_nwse(session.get("region_bounds"))
+        hash_str = generate_filename_hash(
+            dataset_short_name=session.get("dataset_short_name"),
+            variables=session.get("variables"),
+            boundaries=session.get("region_bounds"),
+        )
+        filename_base = f"{session.get('dataset_short_name')}_{coord_str}_{hash_str}"
+
+        # 6) Summary (ALWAYS printed in interactive/verbose; printed in non-verbose via echo)
+        summary = build_download_summary(session, estimates, speed_mbps)
+        log_msg(summary, logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg(f"Output base filename: {filename_base}", logger, echo_console=echo_only_if_no_console_handler(True))
+
+        if run_mode == "interactive":
+            from weather_data_retrieval.io.prompts import prompt_continue_confirmation
+            cont = prompt_continue_confirmation(summary, logger=logger, run_mode=run_mode)
+            if cont in ("__EXIT__", "__BACK__") or cont is False:
+                log_msg("User cancelled operation.", logger, echo_console=echo_only_if_no_console_handler(True))
+                return 1
+
+        # 7) Downloads
+        successful, failed, skipped = [], [], []
+
+        log_msg("Beginning data downloads...", logger, echo_console=echo_only_if_no_console_handler(False))
+        orchestrate_cds_downloads(
+            session=session,
+            filename_base=filename_base,
+            successful_downloads=successful,
+            failed_downloads=failed,
+            skipped_downloads=skipped,
+            logger=logger,
+            echo_console=echo_only_if_no_console_handler(False),  # internal steps won’t echo in non-verbose
+            allow_prompts=(run_mode == "interactive"),
+        )
+
+        # Final counts — treat as summary (echo in non-verbose)
+        log_msg("-" * 60, logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg("Download process completed.", logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg(f"Successful : {len(successful)}", logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg(f"Skipped    : {len(skipped)}", logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg(f"Failed     : {len(failed)}", logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg("-" * 60, logger, echo_console=echo_only_if_no_console_handler(True))
+
+        if failed:
+            log_msg("Some downloads failed. Review logs for details.",
+                    logger, level="warning", echo_console=echo_only_if_no_console_handler(True))
+            return 2
+        return 0
+
+    except Exception as e:
+        # Always echo errors in non-verbose mode
+        log_msg(f"Run failed with exception: {e}", logger, level="exception", echo_console=echo_only_if_no_console_handler(True))
+        return 1
+
+
+# ----------------------------------------------------------------------
+# HELPER FUNCTIONS
+# ----------------------------------------------------------------------
+
+
+def run_batch_from_config(
+        cfg_path: str,
+        logger=None
+        ) -> int:
+    """
+    Run automatic batch from a config file.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary with all required parameters.
+    logger : logging.Logger, optional
+        Pre-configured logger instance, by default None.
+
+    Returns
+    -------
+    int
+        Exit code: 0=success, 1=fatal error, 2=some downloads failed.
+    """
+    config = load_config(cfg_path)
+    return run(config, run_mode="automatic", verbose=False, logger=logger)
+
+
+def run_interactive(logger=None) -> int:
+    """
+    Run interactive prompt wizard and then execute downloads.
+
+    Parameters
+    ----------
+    logger : logging.Logger, optional
+        Pre-configured logger instance, by default None.
+    Returns
+    -------
+    int
+        Exit code: 0=success, 1=fatal error, 2=some downloads failed.
+    """
+    session = SessionState()
+
+    completed = run_prompt_wizard(session, logger=logger, run_mode="interactive")
+
+    if not completed:
+        if logger:
+            log_msg("Wizard cancelled.", logger, echo_console=True)
+        else:
+            print("Wizard cancelled.")
+        return 1
+
+    config = session.to_dict()
+
+    return run(config, run_mode="interactive", verbose=True, logger=logger)
