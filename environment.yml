@@ -1,0 +1,53 @@
+name: osme
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+    # Core numerics, data manipulation
+  - numpy
+  - pandas
+  - polars
+  - pyarrow
+  - scipy
+  - scikit-learn
+  - statsmodels
+
+  # Geospatial packages
+  - geopandas
+  - netcdf4
+  - cftime
+  - pyproj
+  - shapely
+  - xarray
+
+  # Visualization
+  - matplotlib
+
+  # Utilities
+  - ipykernel
+  - jupyter
+  - requests
+  - tqdm
+  - pip:
+      # editable installs for local packages
+      - -e packages/weather_data_retrieval
+      - -e packages/grid_data_retrieval
+      - -e packages/data_cleaning_and_joining
+      - -e packages/marginal_emissions_modelling
+
+      # dependencies
+      - cdsapi
+
+      # dev tools
+      - black
+      - ruff
+      - pytest
+      - pytest-cov
+      - build
+
+      # documentation tools
+      - mkdocs
+      - mkdocs-material
+      - mkdocstrings
+      - mkdocstrings-python
+      - mkdocs-awesome-pages-plugin

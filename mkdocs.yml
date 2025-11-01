@@ -12,5 +12,8 @@ plugins:
             docstring_style: numpy
 
 nav:
-  - Weather Data Retrieval: '!include ./weather_data_retrieval/mkdocs.yml'
-  # - Another Package: '!include ./other_pkg/mkdocs.yml'
+  - Weather Data Retrieval: '!include .packages/weather_data_retrieval/mkdocs.yml'
+  - Grid Data Retrieval: '!include ./grid_data_retrieval/mkdocs.yml'
+  - Data Cleaning and Joining: '!include ./data_cleaning_and_joining/mkdocs.yml'
+  - Marginal Emissions Modelling: '!include ./marginal_emissions_modelling/mkdocs.yml'
+

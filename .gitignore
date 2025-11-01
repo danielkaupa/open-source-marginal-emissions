@@ -4,6 +4,7 @@
 # and should never be committed—they change frequently and bloat diffs.
 ################################################################################
 __pycache__/
+**/*.pyc
 *.py[cod]
 *$py.class
 
