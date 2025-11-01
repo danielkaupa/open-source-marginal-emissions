@@ -4,17 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "weather-data-retrieval"
-version = "0.1.0"
-description = "ERA5 / Open-Meteo retrieval with interactive wizard or batch config"
+version = "1.0.0"
+description = "Streamlined CDS & weather API retrieval tool (interactive or automatic) with validation, logging, and retries."
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{name="Daniel Kaupa"}]
-license = {text = "MIT"}
+license = {text = "LICENSE.txt"}
 dependencies = [
   "cdsapi>=0.6.1",
   "requests>=2.31",
-  "pyyaml>=6.0",     
   "tqdm>=4.66"
+]
+
+classifiers = [
+  "License :: Free for non-commercial use"
 ]
 
 [project.optional-dependencies]
@@ -23,5 +26,10 @@ dev = ["pytest>=8", "build>=1.2"]
 [project.scripts]
 wdr = "weather_data_retrieval.main:main"
 
+
+[tool.setuptools]
+license-files = ["LICENSE*", "COPYING*", "NOTICE*"]
+
 [tool.setuptools.packages.find]
-include = ["weather_data_retrieval"]
+where = ["."]
+include = ["weather_data_retrieval*"]

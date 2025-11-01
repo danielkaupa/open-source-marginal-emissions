@@ -9,8 +9,8 @@ from pathlib import Path
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
-from weather_data_retrieval.utils.session_management import SessionState
-from weather_data_retrieval.utils.data_validation import (
+from .utils.session_management import SessionState
+from .utils.data_validation import (
     normalize_input,
     validate_data_provider,
     validate_dataset_short_name,
@@ -22,7 +22,7 @@ from weather_data_retrieval.utils.data_validation import (
     validate_coordinates,
     validate_variables
 )
-from weather_data_retrieval.utils.logging import log_msg
+from .utils.logging import log_msg
 
 
 # ----------------------------------------------
@@ -746,3 +746,4 @@ def prompt_continue_confirmation(
             say("\nDownload cancelled by user.", logger=logger)
             return False
         say("\nERROR: Invalid input. Please enter 'y' or 'n'.", logger=logger)
+
