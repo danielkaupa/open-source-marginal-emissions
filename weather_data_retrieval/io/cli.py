@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
         description="ERA5/Open-Meteo downloader — interactive or batch via config file."
     )
     p.add_argument(
-        "config",
+        "--config",
         nargs="?",
         default=None,
         help="Path to JSON config file. If provided, runs in non-interactive (automatic) mode."
