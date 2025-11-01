@@ -15,8 +15,7 @@ from tqdm import tqdm
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
-# from weather_data_retrieval.utils.session_management import SessionState
-# from weather_data_retrieval.utils.data_validation import format_duration
+# N/A
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
