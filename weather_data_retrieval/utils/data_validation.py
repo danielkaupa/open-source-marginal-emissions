@@ -3,9 +3,11 @@
 # ----------------------------------------------
 
 import calendar
-from datetime import datetime, timedelta
-from typing import List, Optional
+from datetime import datetime, time, timedelta
+import tempfile
+from typing import List, Optional, Any
 import cdsapi
+import os
 from pathlib import Path
 
 
@@ -14,21 +16,113 @@ from pathlib import Path
 # ----------------------------------------------
 
 from weather_data_retrieval.utils.logging import log_msg
-from weather_data_retrieval.utils.session_management import SessionState
 
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
 # ----------------------------------------------
 
+# This file lives at: <project_root>/weather_data_retrieval/utils/data_validation.py
+# parents[0] = .../utils, parents[1] = .../weather_data_retrieval, parents[2] = <project_root>
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+DATA_DIR = PROJECT_ROOT / "data"
+RAW_DATA_DIR = DATA_DIR / "raw"
+INPUT_DIR = PROJECT_ROOT / "input"
+
+# Public defaults used by the rest of the app
+default_save_dir = RAW_DATA_DIR
+default_input_dir = INPUT_DIR
+
 # Lists of known "bad" variables for various datasets
 invalid_era5_world_variables = [
     'fraction_of_cloud_cover',
-    'large_scale_precipitation'
+    'large_scale_precipitation',
+    # UNTESTED
+    'snow_density',
+    'snow_depth',
+    'snowfall',
+    'surface_runoff',
+    'sub_surface_runoff',
+    'total_evaporation',
+    'volumetric_soil_water_layer_1',
+    'volumetric_soil_water_layer_2',
+    'volumetric_soil_water_layer_3',
+    'volumetric_soil_water_layer_4',
+    'skin_reservoir_content',
+    'temperature_of_snow_layer',
+    'soil_temperature_level_1',
+    'soil_temperature_level_2',
+    'soil_temperature_level_3',
+    'soil_temperature_level_4'
 ]
 
+test_payload = {
+    "dataset": "reanalysis-era5-single-levels",
+    "request": {
+        "product_type": ["reanalysis"],
+        "variable": ["2m_temperature"],
+        "year": ["2025"],
+        "month": ["01"],
+        "day": ["01"],
+        "time": ["00:00"],
+        "data_format": "grib",
+        "download_format": "unarchived",
+        "area": [90, 81, 89, 82]
+        }
+    }
+
+
 # - TO BE IMPLEMENTED -
-invalid_era5_land_variables = []
+invalid_era5_land_variables = [
+    # UNTESTED
+    'boundary_layer_height',
+    'vertical_integral_of_eastward_water_vapour_flux',
+    'vertical_integral_of_northward_water_vapour_flux',
+    'vertical_integral_of_divergence_of_cloud_frozen_water_flux',
+    'vertical_integral_of_divergence_of_cloud_liquid_water_flux',
+    'vertical_integral_of_divergence_of_geopotential_flux',
+    'vertical_integral_of_divergence_of_kinetic_energy_flux',
+    'vertical_integral_of_divergence_of_mass_flux',
+    'vertical_integral_of_divergence_of_moisture_flux',
+    'vertical_integral_of_divergence_of_ozone_flux',
+    'vertical_integral_of_divergence_of_thermal_energy_flux',
+    'vertical_integral_of_divergence_of_total_energy_flux',
+    'vertical_integral_of_eastward_cloud_frozen_water_flux',
+    'vertical_integral_of_eastward_cloud_liquid_water_flux',
+    'vertical_integral_of_eastward_geopotential_flux',
+    'vertical_integral_of_eastward_heat_flux',
+    'vertical_integral_of_eastward_kinetic_energy_flux',
+    'vertical_integral_of_eastward_mass_flux',
+    'vertical_integral_of_eastward_ozone_flux',
+    'vertical_integral_of_eastward_total_energy_flux',
+    'vertical_integral_of_eastward_water_vapour_flux',
+    'vertical_integral_of_energy_conversion',
+    'vertical_integral_of_kinetic_energy',
+    'vertical_integral_of_mass_of_atmosphere',
+    'vertical_integral_of_northward_cloud_frozen_water_flux',
+    'vertical_integral_of_northward_cloud_liquid_water_flux',
+    'vertical_integral_of_northward_geopotential_flux',
+    'vertical_integral_of_northward_heat_flux',
+    'vertical_integral_of_northward_kinetic_energy_flux',
+    'vertical_integral_of_northward_mass_flux',
+    'vertical_integral_of_northward_ozone_flux',
+    'vertical_integral_of_northward_total_energy_flux',
+    'vertical_integral_of_northward_water_vapour_flux',
+    'vertical_integral_of_potential_and_internal_energy',
+    'vertical_integral_of_potential_internal_and_latent_energy',
+    'vertical_integral_of_temperature',
+    'vertical_integral_of_thermal_energy',
+    'vertical_integral_of_total_energy',
+    'geopotential',
+    'specific_cloud_ice_water_content',
+    'specific_cloud_liquid_water_content',
+    'specific_humidity',
+    'specific_rain_water_content',
+    'specific_snow_water_content',
+    'fraction_of_cloud_cover',
+    'large_scale_precipitation'
+]
 
 invalid_open_meteo_variables = []
 
@@ -53,13 +147,13 @@ NORMALIZATION_MAP = {
         "era5land": "era5-land",
         "era5-land": "era5-land",
         "land": "era5-land",
-        "0.1": "era5-land",     # resolution of the dataset in ESPG:4326
+        "0.1": "era5-land",     # resolution of the dataset in EPSG:4326
         "1": "era5-land",
         "era5-world": "era5-world",
         "era5_world": "era5-world",
         "world": "era5-world",
         "era5": "era5-world",
-        "0.25": "era5-world",   # resolution of the dataset in ESPG:4326
+        "0.25": "era5-world",   # resolution of the dataset in EPSG:4326
         "2" : "era5-world",
     },
     "open_meteo_dataset_short_name": {
@@ -238,7 +332,7 @@ def validate_dataset_short_name(
         return dataset_short_name in CDS_DATASETS
     if provider == "open-meteo":
         raise NotImplementedError("Open-Meteo dataset validation not yet implemented.")
-    print(f"Warning: Unknown provider '{provider}'.")
+    log_msg(f"Warning: Unknown provider '{provider}'.")
     return False
 
 
@@ -269,17 +363,63 @@ def validate_cds_api_key(
     cdsapi.Client | None
         Authenticated client if successful, otherwise None.
     """
+
+    if logger:
+        log_msg("Testing CDS API connection with provided credentials...", logger, level="info")
+
+    # 1) Initialize client
     try:
-        log_msg("Testing CDS API connection with provided credentials...", logger,
-                echo_console=echo_console)
-        client = cdsapi.Client(url=url, key=key, quiet=True, timeout=10)
-        _ = client.list()
-        log_msg("\tAuthentication successful!", logger, echo_console=echo_console)
-        return client
+        client = cdsapi.Client(url=url, key=key, quiet=True, timeout=30)
     except Exception as e:
-        log_msg(f"\tAuthentication failed: {e}", logger, level="warning",
-                echo_console=echo_console)
+        if logger:
+            log_msg(f"\tFailed to initialize CDS client: {e}", logger, level="warning")
         return None
+
+    # 2) Probe using the predefined payload (normalize keys minimally)
+    #    Expecting a dict like: test_payload = {"dataset": "...", "request": {...}}
+    try:
+        dataset = test_payload["dataset"]
+        request = dict(test_payload["request"])  # shallow copy so we can tweak keys safely
+
+        # product_type must be a string
+        if isinstance(request.get("product_type"), list) and request["product_type"]:
+            request["product_type"] = request["product_type"][0]
+
+        # -------------------------------------------------------------------
+        tmp_path = Path(tempfile.gettempdir()) / f"cds_probe_{os.getpid()}_{int(datetime.now().timestamp())}.grib"
+
+        if logger:
+            log_msg("\tProbing ERA5 permissions with a minimal retrieve...", logger)
+            request_items = ""
+            for k, v in request.items():
+                request_items += f"\n\t   {k}: {v}"
+            log_msg(f"\tRequest details: dataset='{dataset}' {request_items}", logger)
+
+        client.retrieve(dataset, request, target=str(tmp_path))
+
+        if logger:
+            log_msg("\tPermission probe succeeded.\n", logger)
+        return client
+
+    except Exception as e:
+        msg = str(e)
+        if logger:
+            log_msg(f"\tAuthentication/probe failed: {msg}\n", logger, level="warning")
+            if "401" in msg or "Unauthorized" in msg or "operation not allowed" in msg:
+                log_msg(
+                    f"\tCDS returned 401/Unauthorized. This usually means you haven’t accepted the "
+                    f"licence for '{test_payload.get('dataset','(unknown)')}'. Please log into the CDS website and accept it.\n",
+                    logger,
+                    level="warning",
+                )
+        return None
+    finally:
+        # Cleanup
+        try:
+            if 'tmp_path' in locals() and tmp_path.exists():
+                tmp_path.unlink()
+        except Exception:
+            pass
 
 # 5 - SAVE DIRECTORY (save_dir)
 def validate_directory(path: str) -> bool:
@@ -337,7 +477,7 @@ def validate_date(
                 datetime.strptime(value, "%Y-%m")
                 return True
             except ValueError:
-                print(f"Invalid date format '{value}'. Expected YYYY-MM-DD or YYYY-MM.")
+                log_msg(f"Invalid date format '{value}'. Expected YYYY-MM-DD or YYYY-MM.\n")
                 return False
         return False
 
@@ -413,7 +553,7 @@ def clamp_era5_available_end_date(end: datetime) -> datetime:
     EIGHT_DAY_LAG = 8
     upper = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=EIGHT_DAY_LAG)
     if end > upper:
-        print(f"Adjusting end date from {end.date()} to data availability boundary {upper.date()} (−{EIGHT_DAY_LAG} days).")
+        log_msg(f"Adjusting end date from {end.date()} to data availability boundary {upper.date()} (−{EIGHT_DAY_LAG} days).")
         return upper
     return end
 
@@ -492,7 +632,7 @@ def validate_variables(
 
 # 10 - EXISTING FILE ACTION (existing_file_action)
 def validate_existing_file_action(
-        session: SessionState,
+        session: Any,
         *,
         allow_prompts: bool,
         logger,
@@ -505,7 +645,7 @@ def validate_existing_file_action(
 
     Parameters
     ----------
-    session : SessionState
+    session : Any
         Current session state.
     allow_prompts : bool
         Whether prompts are allowed (i.e., interactive mode).

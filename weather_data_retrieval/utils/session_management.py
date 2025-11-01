@@ -7,6 +7,9 @@ import time
 import requests
 import cdsapi
 from pathlib import Path
+import json
+import textwrap
+from pprint import pformat
 
 # ----------------------------------------------
 # FUNCTION IMPORTS
@@ -24,8 +27,8 @@ from weather_data_retrieval.utils.data_validation import (
     normalize_input,
     default_save_dir,
 )
-from weather_data_retrieval.utils.logging import format_duration
-from weather_data_retrieval.utils.file_management import default_save_dir
+from weather_data_retrieval.utils.logging import log_msg
+# from weather_data_retrieval.utils.logging import format_duration
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -94,48 +97,94 @@ class SessionState:
         # Define column widths
         FIELD_WIDTH = 25
         STATUS_WIDTH = 10
-        VALUE_WIDTH = 40
+        VALUE_WIDTH = 60
 
-        # Header
-        lines.append("-" * (FIELD_WIDTH + STATUS_WIDTH + VALUE_WIDTH + 4))
+        sep_line = "-" * (FIELD_WIDTH + STATUS_WIDTH + VALUE_WIDTH + 4)
+        lines.append(sep_line)
         lines.append(f"{'Variable':<{FIELD_WIDTH}} {'Status':<{STATUS_WIDTH}} {'Values':<{VALUE_WIDTH}}")
-        lines.append("-" * (FIELD_WIDTH + STATUS_WIDTH + VALUE_WIDTH + 4))
+        lines.append(sep_line)
 
-        # Define sensitive fields that should be redacted
-        SENSITIVE_FIELDS = ['api_key']
+        SENSITIVE_FIELDS = {'api_key'}
 
-        for k, v in self.fields.items():
-            val = v["value"]
-            status = "Filled" if v["filled"] else "Empty"
+        def value_to_string(val):
+            """Return a full, human-readable string for any value (no truncation)."""
+            if val is None:
+                return "None"
+            if isinstance(val, dict):
+                # pretty dict with stable keys
+                try:
+                    return json.dumps(val, indent=2, sort_keys=True)
+                except Exception:
+                    return pformat(val, width=VALUE_WIDTH, compact=False)
+            if isinstance(val, (list, tuple, set)):
+                # join list items nicely
+                try:
+                    return "[" + ", ".join(str(x) for x in val) + "]"
+                except Exception:
+                    return pformat(val, width=VALUE_WIDTH, compact=False)
+            # strings / objects
+            return str(val)
+
+        for k, meta in self.fields.items():
+            status = "Filled" if meta["filled"] else "Empty"
 
             if k in SENSITIVE_FIELDS:
-                if v["filled"]:
-                    display_val = "*** REDACTED ***"
-                else:
-                    display_val = "None"
+                display = "*** REDACTED ***" if meta["filled"] else "None"
             else:
-                # Format the value for display
-                if val is None:
-                    display_val = "None"
-                elif isinstance(val, list):
-                    # Truncate long lists
-                    if len(val) > 3:
-                        display_val = f"[{', '.join(str(x) for x in val[:3])}...]"
-                    else:
-                        display_val = f"[{', '.join(str(x) for x in val)}]"
-                elif isinstance(val, dict):
-                    # Truncate long dictionaries
-                    items = list(val.items())[:2]
-                    display_val = f"{{{', '.join(f'{k}:{v}' for k, v in items)}}}{'...' if len(val) > 2 else ''}"
-                else:
-                    # Truncate long strings
-                    str_val = str(val)
-                    display_val = str_val[:VALUE_WIDTH-3] + "..." if len(str_val) > VALUE_WIDTH else str_val
+                display = value_to_string(meta["value"])
 
-            # Use fixed-width formatting
-            lines.append(f"{k:<{FIELD_WIDTH}} {status:<{STATUS_WIDTH}} {display_val:<{VALUE_WIDTH}}")
+            # Wrap into the Values column width
+            wrapped = textwrap.wrap(display, width=VALUE_WIDTH, replace_whitespace=False,
+                                    drop_whitespace=False) or [""]
+
+            # First line has the headers
+            lines.append(f"{k:<{FIELD_WIDTH}} {status:<{STATUS_WIDTH}} {wrapped[0]:<{VALUE_WIDTH}}")
+
+            # Subsequent wrapped lines are indented under the Values column
+            indent = " " * (FIELD_WIDTH + 1 + STATUS_WIDTH + 1)
+            for cont in wrapped[1:]:
+                lines.append(f"{indent}{cont:<{VALUE_WIDTH}}")
+
+            # If the value itself had embedded newlines (e.g., pretty JSON),
+            # wrap each logical line separately:
+            if "\n" in display:
+                value_lines = display.splitlines()
+                # overwrite the simple wrap result with proper newline-aware wrap
+                lines.pop()  # remove the last added line; we’ll redo with newline-aware
+                # rebuild the block:
+                # header line with the first logical line
+                first_logical = textwrap.wrap(value_lines[0], width=VALUE_WIDTH) or [""]
+                lines.append(f"{k:<{FIELD_WIDTH}} {status:<{STATUS_WIDTH}} {first_logical[0]:<{VALUE_WIDTH}}")
+                for fl in first_logical[1:]:
+                    lines.append(f"{indent}{fl:<{VALUE_WIDTH}}")
+                for ln in value_lines[1:]:
+                    for piece in textwrap.wrap(ln, width=VALUE_WIDTH) or [""]:
+                        lines.append(f"{indent}{piece:<{VALUE_WIDTH}}")
 
         return "\n".join(lines)
+
+
+    def to_dict(
+            self,
+            only_filled: bool = False
+            ) -> dict:
+        """
+        Flatten the session into a plain dict suitable for runner.run(...).
+        If only_filled=True, include only keys that have been filled.
+
+        Parameters
+        ----------
+        only_filled : bool, optional
+            Whether to include only filled keys, by default False.
+
+        Returns
+        -------
+        dict
+            Flattened session dictionary.
+        """
+        if only_filled:
+            return {k: v["value"] for k, v in self.fields.items() if v["filled"]}
+        return {k: v["value"] for k, v in self.fields.items()}
 
 def get_cds_dataset_config(
         session: SessionState,
@@ -166,7 +215,9 @@ def get_cds_dataset_config(
 
 def map_config_to_session(
         cfg: dict,
-        session: SessionState
+        session: SessionState,
+        *,
+        logger=None,
         ) -> tuple[bool, list[str]]:
     """
     Validate and map a loaded JSON config into SessionState.
@@ -202,8 +253,8 @@ def map_config_to_session(
     ds = normalize_input(str(raw_ds), "era5_dataset_short_name")
     if not validate_dataset_short_name(ds, "cds"):
         errors.append(f"Invalid dataset_short_name for CDS: {raw_ds!r}. Try 'era5-world'.")
-    elif ds != "era5-world":
-        errors.append("Only 'era5-world' is implemented in this version.")
+    # elif ds != "era5-world":
+    #     errors.append("Only 'era5-world' is implemented in this version.")
     else:
         session.set("dataset_short_name", ds)
         messages.append(f"dataset_short_name = {ds}")
@@ -211,17 +262,25 @@ def map_config_to_session(
     # ---------- API ----------
     api_url = cfg.get("api_url", "https://cds.climate.copernicus.eu/api")
     api_key = cfg.get("api_key", "")
-    if not api_key:
-        errors.append("Missing 'api_key' in config.")
-    else:
+
+    existing_client = cfg.get("session_client")
+    if existing_client is not None:
         session.set("api_url", api_url)
         session.set("api_key", api_key)
-        client = validate_cds_api_key(api_url, api_key)
-        if client is None:
-            errors.append("CDS authentication failed with provided api_url/api_key.")
+        session.set("session_client", existing_client)
+        messages.append("Using existing authenticated CDS client; skipping auth probe.")
+    else:
+        if not api_key:
+            errors.append("Missing 'api_key' in config.")
         else:
-            session.set("session_client", client)
-            messages.append("CDS authentication successful.")
+            session.set("api_url", api_url)
+            session.set("api_key", api_key)
+            client = validate_cds_api_key(api_url, api_key, logger=logger)
+            if client is None:
+                errors.append("CDS authentication failed with provided api_url/api_key.")
+            else:
+                session.set("session_client", client)
+                messages.append("CDS authentication successful.\n")
 
     # ---------- Dates ----------
     # Accept: start_date/end_date or start/end; allow YYYY-MM or YYYY-MM-DD
@@ -421,7 +480,7 @@ def ensure_cds_connection(
             print(f"Lost connection to CDS API ({e}). Attempting re-authentication {attempt}/{max_reauth_attempts}...")
             try:
                 new_client = cdsapi.Client(url=creds["url"], key=creds["key"], quiet=True)
-                print("\tRe-authentication successful!")
+                print("\tRe-authentication successful!\n")
                 return new_client
             except Exception as reauth_e:
                 print(f"\tRe-authentication failed! : {reauth_e}")
@@ -436,6 +495,8 @@ def ensure_cds_connection(
 def internet_speedtest(
         test_urls: list[str] | None = None,
         max_seconds: int = 15,
+        logger = None,
+        echo_console: bool = True,
         ) -> float:
     """
     Download ~100MB test file from a fast CDN to estimate speed (MB/s).
@@ -451,18 +512,24 @@ def internet_speedtest(
     -------
         float: Estimated download speed in Mbps.
     """
+    def _out(msg: str):
+        if logger is not None:
+            # info-level, optionally echo to console via tqdm
+            log_msg(msg, logger, echo_console=echo_console)
+        else:
+            print(msg)
+
     if test_urls is None:
         test_urls = [
             "https://speedtest.london.linode.com/100MB-london.bin",
             "https://mirror.de.leaseweb.net/speedtest/100mb.bin",
             "https://ipv4.download.thinkbroadband.com/100MB.zip",
         ]
-    print("="*40)
-    print(f"Internet speed test\n" + "="*40)
-    print("\n")
+    _out("="*60 + "\nInternet speed test\n" + "="*60)
+    _out(f"\nRunning a short internet speed test (up to {max_seconds}s) to estimate your connection speed...")
     for url in test_urls:
         try:
-            print(f"Testing {url}\n\tMay take up to ~{max_seconds}s...")
+            _out(f"Testing url:{url}")
             t0 = time.time()
             downloaded = 0
             with requests.get(url, stream=True, timeout=max_seconds) as r:
@@ -475,9 +542,9 @@ def internet_speedtest(
                         break
             elapsed = max(1e-6, time.time() - t0)
             mbps = (downloaded * 8 / 1e6) / elapsed
-            print(f"\tRESULT: SUCCESS — {mbps:.1f} Mbps (based on {downloaded/1e6:.1f} MB in {elapsed:.1f}s)")
+            _out(f"\tRESULT: SUCCESS — {mbps:.1f} Mbps (based on {downloaded/1e6:.1f} MB in {elapsed:.1f}s)\n")
             return float(mbps)
         except Exception as e:
-            print(f"\tRESULT: FAILURE on {url}: {e}")
-    print("All tests failed. Assuming 25 Mbps.")
+            _out(f"\tRESULT: FAILURE on {url}: {e}\n")
+    _out("All tests failed. Assuming 25 Mbps.\n")
     return 25.0

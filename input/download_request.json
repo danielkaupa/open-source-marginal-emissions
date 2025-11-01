@@ -1,32 +1,10 @@
 {
-    "dataset_short_name": "era5_world",
-    "dataset_api_name": "reanalysis-era5-single-levels",
-
-    "save_directory": "../data/raw/",
-    "skip_overwrite_case-by-case" : 1,
-    "download_regardless_of_size" : 0,
-
-    "maximum_concurrent_downloads": 2,
-    "maximum_retry_attempts": 6,
-    "retry_delay_seconds": 15,
-
-    "era5_world_grid_resolution": 0.25,
-    "era5_land_grid_resolution": 0.1,
-    "product_type": "reanalysis",
-    "data_download_format": "grib",
-
-    "north_latitude_boundary": 50.0,
-    "south_latitude_boundary": 24.0,
-    "east_longitude_boundary": -66.0,
-    "west_longitude_boundary": -125.0,
-
-    "start_date": "2025-01-01",
-    "end_date": "2025-06-30",
-    "variables": [
-        "2m_temperature",
-        "total_precipitation",
-        "10m_u_component_of_wind",
-        "10m_v_component_of_wind",
-        "surface_pressure"
-    ]
+  "start_date": "2025-01",
+  "end_date": "2025-03",
+  "bounds": { "north": 55, "west": -10, "south": 49, "east": 2 },
+  "variables": ["2m_temperature", "total_precipitation", "fraction_of_cloud_cover"],
+  "save_dir": "../data/raw",
+  "existing_file_action": "skip_all",
+  "retry_settings": { "max_retries": 6, "retry_delay_sec": 15 },
+  "parallel_settings": { "enabled": true, "max_concurrent": 2 }
 }

@@ -50,26 +50,26 @@ def read_input(
         The prompt to display to the user.
     logger : logging.Logger, optional
         Logger to log the prompt message.
-    run_mode : str
-        Run mode, either 'interactive' or 'automatic'.
 
     Returns:
     -------
     str
         The user input, or special command indicators.
     """
+    # Log to file only (DEBUG won't be shown by the console handler at INFO)
+    if logger:
+        # Use level="debug" so it doesn't appear on console
+        log_msg(prompt, logger, level="debug", echo_console=False)
 
-    log_msg(prompt, logger)
-
-    # strip leading/trailing whitespace and convert to lower case for command checks
+    # Show the prompt exactly once on the console
     raw = input(prompt).strip()
     lower = raw.lower()
 
-    # check for special commands
-    if lower in ("exit","quit"): return "__EXIT__"
-    if lower == "back": return "__BACK__"
+    if lower in ("exit", "quit"):
+        return "__EXIT__"
+    if lower == "back":
+        return "__BACK__"
 
-    # return input cleaned of leading/trailing whitespace and lowercased
     return lower
 
 
@@ -93,6 +93,8 @@ def say(
     None
 
     """
+    # if logger:
+    #     logger.info(text)
     log_msg(text, logger)
 
 
@@ -112,8 +114,6 @@ def prompt_data_provider(
         Current session state to store selected data provider.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
@@ -123,7 +123,7 @@ def prompt_data_provider(
 
     """
 
-    say("-"*30 + "\nData Provider Selection:\n" + '-'*30, logger=logger)
+    say("-"*60 + "\nData Provider Selection:\n" + '-'*60, logger=logger)
     say("Available data providers:\n\t1. Copernicus Climate Data Store (CDS)\n\t2. Open-Meteo", logger=logger)
 
     while True:
@@ -142,7 +142,7 @@ def prompt_data_provider(
             say("\nERROR: Open-Meteo support is not yet implemented. Please select CDS.", logger=logger)
             continue
 
-        say(f"\nYou selected: {data_provider.upper()}\n", logger=logger)
+        say(f"\nYou selected: [{data_provider.upper()}]\n", logger=logger)
 
         session.set("data_provider", data_provider)
 
@@ -155,7 +155,7 @@ def prompt_dataset_short_name(
         provider: str,
         *,
         logger=None,
-        run_mode: str = "interactive") -> str:
+        ) -> str:
     """
     Prompt for dataset choice.
 
@@ -167,8 +167,6 @@ def prompt_dataset_short_name(
         Data provider name.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
@@ -179,25 +177,25 @@ def prompt_dataset_short_name(
         say("\nCurrently only CDS datasets are supported.", logger=logger)
         return "__BACK__"
 
-    say("-"*30 + "\nDataset Selection:\n" + '-'*30, logger=logger)
+    say("-"*60 + "\nDataset Selection:\n" + '-'*60, logger=logger)
     say("Available CDS datasets:\n\t1. ERA5-Land\n\t2. ERA5-World", logger=logger)
 
     while True:
         raw = read_input("\nPlease enter the dataset you would like to use (name or number): ",
-                         logger=logger, run_mode=run_mode)
+                         logger=logger)
         if raw in ("__EXIT__", "__BACK__"):
             return raw
 
         dataset_short_name = normalize_input(raw, "era5_dataset_short_name")
         if not validate_dataset_short_name(dataset_short_name, provider):
-            say("Invalid or unsupported dataset. Try again.", logger=logger)
+            say("\nERROR: Invalid or unsupported dataset. Try again.", logger=logger)
             continue
 
-        if dataset_short_name != "era5-world":
-            say("Only ERA5-World dataset is implemented in this version. Please select ERA5-World.", logger=logger)
-            continue
+        # if dataset_short_name != "era5-world":
+        #     say("\nERROR: Only ERA5-World dataset is implemented in this version. Please select ERA5-World.", logger=logger)
+        #     continue
 
-        say(f"\nYou selected: {dataset_short_name.upper()}\n", logger=logger)
+        say(f"\nYou selected: [{dataset_short_name.upper()}]\n", logger=logger)
         session.set("dataset_short_name", dataset_short_name)
         return dataset_short_name
 
@@ -208,7 +206,6 @@ def prompt_cds_url(
         api_url_default: str = "https://cds.climate.copernicus.eu/api",
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> str:
     """
     Prompt for CDS API URL.
@@ -225,7 +222,7 @@ def prompt_cds_url(
         str: CDS API URL or 'exit' / 'back'.
 
     """
-    say("-"*30 + "\nCDS API url:\n" + '-'*30, logger=logger)
+    say("-"*60 + "\nCDS API url:\n" + '-'*60, logger=logger)
     say(f"Default: {api_url_default}", logger=logger)
     while True:
         raw = read_input("\nEnter the CDS API url (or press Enter to keep default): ",
@@ -243,7 +240,6 @@ def prompt_cds_api_key(
         session: SessionState,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> str:
     """
     Prompt only for the CDS API key (hidden input).
@@ -254,15 +250,13 @@ def prompt_cds_api_key(
         Current session state to store API key.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
     str
         CDS API key or 'exit' / 'back'.
     """
-    say("-"*30 + "\nCDS API key:\n" + '-'*30, logger=logger)
+    say("-"*60 + "\nCDS API key:\n" + '-'*60, logger=logger)
     while True:
         key = getpass("\nEnter your CDS API key: ")
         # getpass cannot log input value; we just log the action
@@ -272,7 +266,7 @@ def prompt_cds_api_key(
         if low == "back":
             return "__BACK__"
         if not key:
-            say("No API key entered. Please try again.", logger=logger)
+            say("\nERROR: No API key entered. Please try again.", logger=logger)
             continue
         session.set("api_key", key)
         say(f"\nYou entered an API key of length {len(key)} characters.\n", logger=logger)
@@ -285,7 +279,6 @@ def prompt_save_directory(
         default_dir: Path,
         *,
         logger=None,
-        run_mode: str = "interactive"
     ) -> Path | str:
 
     """
@@ -299,8 +292,6 @@ def prompt_save_directory(
         Default directory to suggest.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
@@ -308,18 +299,18 @@ def prompt_save_directory(
         Path to save directory, or control token "__BACK__" / "__EXIT__".
 
     """
-    say("-"*30 + "\nData Save Directory Selection:\n" + '-'*30, logger=logger)
-    say(f"Default: {default_dir}", logger=logger, run_mode=run_mode)
+    say("-"*60 + "\nData Save Directory Selection:\n" + '-'*60, logger=logger)
+    say(f"Default: {default_dir}", logger=logger)
     while True:
         raw = read_input("\nEnter a path (or press Enter to use default): ", logger=logger)
         if raw in ("__EXIT__", "__BACK__"):
             return raw
         path = Path(raw or default_dir).expanduser().resolve()
         if validate_directory(str(path)):
-            say(f"\nYou set the save directory to: {path}\n", logger=logger, run_mode=run_mode)
+            say(f"\nYou set the save directory to: {path}\n", logger=logger)
             session.set("save_dir", path)
             return path
-        say(f"Directory [{path}] could not be created or accessed. Try another path.", logger=logger)
+        say(f"ERROR: Directory [{path}] could not be created or accessed. Try another path.", logger=logger)
 
 
 # 6 & 7 - DATE RANGE (start_date, end_date)
@@ -327,7 +318,6 @@ def prompt_date_range(
         session: SessionState,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> tuple[str, str]:
     """
     Ask user for start and end date, with validation.
@@ -341,8 +331,6 @@ def prompt_date_range(
         Current session state to store date range.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
@@ -350,7 +338,7 @@ def prompt_date_range(
         (start_date_str, end_date_str) in ISO format (YYYY-MM-DD),
         or ("__EXIT__", "__EXIT__") / ("__BACK__", "__BACK__")
     """
-    say("-"*30 + "\nDate Range Selection:\n" + '-'*30, logger=logger)
+    say("-"*60 + "\nDate Range Selection:\n" + '-'*60, logger=logger)
     say("Enter dates as YYYY-MM-DD or YYYY-MM\n(YYYY-MM will default to first day for start, last day for end)", logger=logger)
 
     while True:
@@ -386,7 +374,7 @@ def prompt_date_range(
             end_str = end.date().isoformat()
 
         say(f"\nYou selected a date range of start [{start.date().isoformat()}] → end [{end.date().isoformat()}]\n",
-            logger=logger, run_mode=run_mode)
+            logger=logger)
         session.set("start_date", start.date().isoformat())
         session.set("end_date", end.date().isoformat())
         return start.date().isoformat(), end.date().isoformat()
@@ -397,7 +385,6 @@ def prompt_coordinates(
         session: SessionState,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> list[float]:
     """
     Prompt user for geographic boundaries (N, S, W, E) with validation.
@@ -412,7 +399,7 @@ def prompt_coordinates(
     list[float]
         [north, west, south, east] boundaries or special tokens "__EXIT__" / "__BACK__".
     """
-    say('-'*30 + "\nGrid Area Selection (ESPG: 4326):\n" + '-'*30, logger=logger)
+    say('-'*60 + "\nGrid Area Selection (EPSG: 4326):\n" + '-'*60, logger=logger)
     while True:
         entries = {}
         for label, key in [("Northern latitude", "north"),
@@ -435,12 +422,12 @@ def prompt_coordinates(
             say("\nPlease enter numeric values for all coordinates.", logger=logger)
             continue
 
-        if not validate_coordinates(n, s, e, w):
+        if not validate_coordinates(n, w, s, e):
             say("Invalid bounds. Check that -90 ≤ lat ≤ 90, -180 ≤ lon ≤ 180, and North > South.", logger=logger)
             continue
 
         bounds = [n, w, s, e]
-        say(f"You entered boundaries of: N{n}, W{w}, S{s}, E{e}", logger=logger)
+        say(f"You entered boundaries of: [N{n}, W{w}, S{s}, E{e}]\n", logger=logger)
         session.set("region_bounds", bounds)
         return bounds
 
@@ -452,7 +439,6 @@ def prompt_variables(
         *args,
         restriction_allow: bool = False,
         logger=None,
-        run_mode: str = "interactive"
         ) -> list[str] | str:
     """
     Ask for variables to download, validate each against allowed/disallowed list,
@@ -469,15 +455,13 @@ def prompt_variables(
         If False, it's a denylist (i.e. not in)
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
     list[str] | str
         List of selected variable names, or control token "__BACK__" / "__EXIT__".
     """
-    say("-" * 30 + f"\nVariable Selection [{session.get('dataset_short_name')}]:\n" + "-" * 30, logger=logger)
+    say("-" * 60 + f"\nVariable Selection [{session.get('dataset_short_name')}]:\n" + "-" * 60, logger=logger)
     say("(Type 'back' to return to previous step or 'exit' to quit.)", logger=logger)
 
     while True:
@@ -498,20 +482,19 @@ def prompt_variables(
                 invalid_vars = [v for v in variable_list if v not in variable_restrictions_list]
                 say("\nERROR: Some variables are not recognized or not available for this dataset:", logger=logger)
                 for iv in invalid_vars:
-                    say(f"   - {iv}", logger=logger, run_mode=run_mode)
+                    say(f"   - {iv}", logger=logger)
             else:
                 valid_vars = [v for v in variable_list if v not in variable_restrictions_list]
                 invalid_vars = [v for v in variable_list if v in variable_restrictions_list]
                 say("\nERROR: The following variables are known to cause issues or are disallowed for this dataset:", logger=logger)
                 for iv in invalid_vars:
-                    say(f"   - {iv}", logger=logger, run_mode=run_mode)
+                    say(f"   - {iv}", logger=logger)
                 say("\nPlease edit the invalid variable list for this dataset if you believe this is an error.", logger=logger)
 
             if valid_vars:
                 proceed = read_input(
                     f"\nWould you like to proceed with only the valid variables ({', '.join(valid_vars)})? (y/n): ",
-                    logger=logger, run_mode=run_mode
-                ).strip().lower()
+                    logger=logger)
                 if proceed in NORMALIZATION_MAP["confirmation"] and NORMALIZATION_MAP["confirmation"][proceed] == "yes":
                     say("\nProceeding with valid subset.\n", logger=logger)
                     session.set("variables", valid_vars)
@@ -523,7 +506,7 @@ def prompt_variables(
                 say("\nERROR: No valid variables remain. Please try again.\n", logger=logger)
                 continue
 
-        say(f"\nYou selected {len(variable_list)} valid variables:\n{', '.join(variable_list)}", logger=logger)
+        say(f"\nYou selected [{len(variable_list)}] valid variables:\n{', '.join(variable_list)}", logger=logger)
         confirm = read_input("\nConfirm selection? (y/n): ", logger=logger)
         if confirm in NORMALIZATION_MAP["confirmation"] and NORMALIZATION_MAP["confirmation"][confirm] == "yes":
             session.set("variables", variable_list)
@@ -537,7 +520,6 @@ def prompt_skip_overwrite_files(
         session: SessionState,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> str:
     """
     Prompt user to choose skip/overwrite/case-by-case for existing files.
@@ -548,16 +530,13 @@ def prompt_skip_overwrite_files(
         Session state to store user choice.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
     str
         One of "overwrite_all", "skip_all", "case_by_case"
     """
-
-    say("\nChoose how to proceed with existing files:\n", logger=logger)
+    say("\n" + "-" * 60 + f"\nExisting File Policy:\n" + "-" * 60, logger=logger)
     say("\t1. Overwrite all existing files\n\t2. Skip all existing files\n\t3. Case-by-case confirmation", logger=logger)
 
     while True:
@@ -575,7 +554,7 @@ def prompt_skip_overwrite_files(
     else:
         session.set("existing_file_action", "case_by_case")
 
-    say(f"You selected option {choice} - {session.get('existing_file_action')}", logger=logger)
+    say(f"You selected option [{choice}] - [{session.get('existing_file_action')}] \n", logger=logger)
     return session.get("existing_file_action")
 
 
@@ -585,7 +564,6 @@ def prompt_parallelisation_settings(
         session: SessionState,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> dict | str:
     """
     Ask user about parallel downloads and concurrency cap.
@@ -596,17 +574,16 @@ def prompt_parallelisation_settings(
         Current session state to store parallelisation settings.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
+
 
     Returns
     -------
     dict | str
         Dictionary with parallelisation settings, or control token "__BACK__" / "__EXIT__".
     """
-    say("-"*30 + "\nParallelisation Settings:\n" + '-'*30, logger=logger, run_mode=run_mode)
-    say("You can enable multiple parallel downloads to speed up retrieval.\nNote: The CDS API may throttle or reject requests if too many are opened concurrently.\n",
-        logger=logger, run_mode=run_mode)
+    say("-"*60 + "\nParallelisation Settings:\n" + '-'*60, logger=logger)
+    say("You can enable multiple parallel downloads to speed up retrieval.\nNote: The CDS API may throttle or reject requests if too many are opened concurrently.",
+        logger=logger)
 
     while True:
         raw = read_input("\nEnable parallel downloads? (y/n) [default y]: ", logger=logger)
@@ -655,7 +632,7 @@ def prompt_parallelisation_settings(
 
             settings = {"enabled": True, "max_concurrent": mc}
             session.set("parallel_settings", settings)
-            say(f"\nYou have enabled parallel downloads with a maximum of [{mc}] concurrent downloads.", logger=logger)
+            say(f"\nYou have enabled parallel downloads with a maximum of [{mc}] concurrent downloads.\n", logger=logger)
             return settings
 
 
@@ -666,7 +643,6 @@ def prompt_retry_settings(
         default_delay: int = 15,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> dict | str:
     """
     Ask user for retry limits.
@@ -681,15 +657,13 @@ def prompt_retry_settings(
         Default delay (in seconds) between retries (default = 15).
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
 
     Returns
     -------
     dict | str
         Dictionary with 'max_retries' and 'retry_delay_sec', or control token "__BACK__" / "__EXIT__".
     """
-    say("-"*30 + "\nRetry Settings:\n" + '-'*30, logger=logger, run_mode=run_mode)
+    say("-"*60 + "\nRetry Settings:\n" + '-'*60, logger=logger)
     say("These settings control how the program handles failed download attempts.", logger=logger)
     say(f"Default values → Retries: {default_retries}, Delay: {default_delay}s", logger=logger)
 
@@ -710,7 +684,7 @@ def prompt_retry_settings(
         if normalized == "yes":
             settings = {"max_retries": default_retries, "retry_delay_sec": default_delay}
             session.set("retry_settings", settings)
-            say(f"\nUsing default retry settings of max_retries: {default_retries}, retry_delay_sec: {default_delay}", logger=logger)
+            say(f"\nUsing default retry settings of max_retries: [{default_retries}], retry_delay_sec: [{default_delay}]", logger=logger)
             return settings
 
         while True:
@@ -729,7 +703,7 @@ def prompt_retry_settings(
                     continue
                 settings = {"max_retries": max_retries, "retry_delay_sec": retry_delay_sec}
                 session.set("retry_settings", settings)
-                say(f"\nYou set max_retries={max_retries}, retry_delay_sec={retry_delay_sec}.", logger=logger)
+                say(f"\nYou set max_retries=[{max_retries}], retry_delay_sec=[{retry_delay_sec}].", logger=logger)
                 return settings
             except ValueError:
                 say("Please enter valid integer values for retries and delay.", logger=logger)
@@ -737,22 +711,20 @@ def prompt_retry_settings(
 
 # 13 - DOWNLOAD SUMMARY AND CONFIRMATION
 def prompt_continue_confirmation(
-        summary_text: str | SessionState,
+        session: SessionState,
         *,
         logger=None,
-        run_mode: str = "interactive"
         ) -> bool | str:
     """
     Display a formatted download summary and confirm before starting downloads.
 
     Parameters
     ----------
-    summary_text : str | SessionState
-        Formatted summary of the download configuration or session state to summarise.
+    session : SessionState
+        session state to summarise.
     logger : logging.Logger, optional
         Logger for logging messages, by default None.
-    run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
+
 
     Returns
     -------
@@ -760,11 +732,8 @@ def prompt_continue_confirmation(
         True if user confirms, False if user declines,
         or control token "__BACK__" / "__EXIT__".
     """
-    if isinstance(summary_text, SessionState):
-        text = summary_text.summary()
-    else:
-        text = summary_text
-    say(text, logger=logger, run_mode=run_mode)
+    text = session.summary()
+    say(text, logger=logger)
     while True:
         user_input = read_input("\nProceed with download? (y/n): ", logger=logger)
         if user_input in ("__EXIT__", "__BACK__"):

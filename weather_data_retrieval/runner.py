@@ -36,6 +36,7 @@ from weather_data_retrieval.utils.logging import (
     setup_logger,
     build_download_summary,
     log_msg,
+    create_final_log_file,
 )
 from weather_data_retrieval.io.config_loader import (
     load_and_validate_config,
@@ -96,22 +97,29 @@ def run(
 
         # 2) Map config → session
         session = SessionState()
-        ok, notes = map_config_to_session(config, session)
+        ok, notes = map_config_to_session(config, session, logger=logger)
         for note in notes:
             log_msg(note, logger, echo_console=echo_only_if_no_console_handler(False))
         if not ok:
             log_msg("Config mapping reported blocking issues. Exiting.",
                     logger, level="error", echo_console=echo_only_if_no_console_handler(True))
+            create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
             return 1
 
         # 2b) Automatic mode cannot be case-by-case for existing file policy (already coerced by validate_config)
         # Nothing to do here; messages already logged.
 
         # 3) Short internet speed test (both modes)
-        log_msg("Running short internet speed test...", logger, echo_console=echo_only_if_no_console_handler(False))
-        speed_mbps = internet_speedtest(test_urls=None, max_seconds=10)
+        speed_mbps = internet_speedtest(test_urls=None, max_seconds=10, logger=logger, echo_console=echo_only_if_no_console_handler(False))
         log_msg(f"Detected speed: {speed_mbps:.1f} Mbps", logger, echo_console=echo_only_if_no_console_handler(False))
 
+        dataset_short_name = session.get("dataset_short_name")
+        if dataset_short_name == "era5-world":
+            grid_res = 0.25
+        elif dataset_short_name == "era5-land":
+            grid_res = 0.1
+        else:
+            raise ValueError(f"Unknown dataset_short_name: {dataset_short_name}")
         # 4) Estimate size/time
         estimates = estimate_cds_download(
             variables=session.get("variables"),
@@ -119,6 +127,7 @@ def run(
             start_date=session.get("start_date"),
             end_date=session.get("end_date"),
             observed_speed_mbps=speed_mbps,
+            grid_resolution=grid_res,
         )
 
         # Adjust for parallelisation — scale total_time_sec only
@@ -146,17 +155,10 @@ def run(
         log_msg(summary, logger, echo_console=echo_only_if_no_console_handler(True))
         log_msg(f"Output base filename: {filename_base}", logger, echo_console=echo_only_if_no_console_handler(True))
 
-        if run_mode == "interactive":
-            from weather_data_retrieval.io.prompts import prompt_continue_confirmation
-            cont = prompt_continue_confirmation(summary, logger=logger, run_mode=run_mode)
-            if cont in ("__EXIT__", "__BACK__") or cont is False:
-                log_msg("User cancelled operation.", logger, echo_console=echo_only_if_no_console_handler(True))
-                return 1
-
         # 7) Downloads
         successful, failed, skipped = [], [], []
 
-        log_msg("Beginning data downloads...", logger, echo_console=echo_only_if_no_console_handler(False))
+        log_msg("\n" + "-" * 60 + "\n\n\nBeginning download process...", logger, echo_console=echo_only_if_no_console_handler(False))
         orchestrate_cds_downloads(
             session=session,
             filename_base=filename_base,
@@ -179,12 +181,25 @@ def run(
         if failed:
             log_msg("Some downloads failed. Review logs for details.",
                     logger, level="warning", echo_console=echo_only_if_no_console_handler(True))
+            create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+            log_msg(msg="\nProgram ended, goodbye.\n\n", logger=logger, echo_console=echo_only_if_no_console_handler(False))
             return 2
-        return 0
+        create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+        log_msg(msg="*"*60 + "\nProgram completed, thank you for using this tool. Goodbye!\n" + "*"*60 + "\n\n", logger=logger, echo_console=echo_only_if_no_console_handler(False))
+
 
     except Exception as e:
         # Always echo errors in non-verbose mode
         log_msg(f"Run failed with exception: {e}", logger, level="exception", echo_console=echo_only_if_no_console_handler(True))
+        coord_str = format_coordinates_nwse(session.get("region_bounds"))
+        hash_str = generate_filename_hash(
+            dataset_short_name=session.get("dataset_short_name"),
+            variables=session.get("variables"),
+            boundaries=session.get("region_bounds"),
+        )
+        filename_base = f"{session.get('dataset_short_name')}_{coord_str}_{hash_str}"
+        create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+        log_msg("\nProgram ended, goodbye.\n\n", logger, echo_console=echo_only_if_no_console_handler(True))
         return 1
 
 
@@ -216,30 +231,30 @@ def run_batch_from_config(
     return run(config, run_mode="automatic", verbose=False, logger=logger)
 
 
-def run_interactive(logger=None) -> int:
-    """
-    Run interactive prompt wizard and then execute downloads.
+# def run_interactive(logger=None) -> int:
+#     """
+#     Run interactive prompt wizard and then execute downloads.
 
-    Parameters
-    ----------
-    logger : logging.Logger, optional
-        Pre-configured logger instance, by default None.
-    Returns
-    -------
-    int
-        Exit code: 0=success, 1=fatal error, 2=some downloads failed.
-    """
-    session = SessionState()
+#     Parameters
+#     ----------
+#     logger : logging.Logger, optional
+#         Pre-configured logger instance, by default None.
+#     Returns
+#     -------
+#     int
+#         Exit code: 0=success, 1=fatal error, 2=some downloads failed.
+#     """
+#     session = SessionState()
 
-    completed = run_prompt_wizard(session, logger=logger, run_mode="interactive")
+#     completed = run_prompt_wizard(session, logger=logger)
 
-    if not completed:
-        if logger:
-            log_msg("Wizard cancelled.", logger, echo_console=True)
-        else:
-            print("Wizard cancelled.")
-        return 1
+#     if not completed:
+#         if logger:
+#             log_msg("Wizard cancelled.", logger, echo_console=True)
+#         else:
+#             print("Wizard cancelled.")
+#         return 1
 
-    config = session.to_dict()
+#     config = session.to_dict()
 
-    return run(config, run_mode="interactive", verbose=True, logger=logger)
+#     return run(config, verbose=True, logger=logger)

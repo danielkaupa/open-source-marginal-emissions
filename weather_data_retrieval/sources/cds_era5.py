@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 import os
 import time
+from time import perf_counter
 from typing import Optional, Tuple, List
 
 # ----------------------------------------------
@@ -107,7 +108,6 @@ def prepare_cds_download(
                     f"\nFile already exists for {year}-{month:02d}: {save_path}\n"
                     "Do you want to overwrite it? (y/n): ",
                     logger=logger,
-                    run_mode="interactive",
                 )
                 if user_input in NORMALIZATION_MAP["confirmation"]:
                     yn = NORMALIZATION_MAP["confirmation"][user_input]
@@ -356,7 +356,6 @@ def plan_cds_months(
                     f"\nFile already exists for {y}-{m:02d}: {existing}\n"
                     f"Overwrite this one? (y/n): ",
                     logger=logger,
-                    run_mode="interactive",
                 )
                 if ans in NORMALIZATION_MAP["confirmation"]:
                     yn = NORMALIZATION_MAP["confirmation"][ans]
@@ -368,14 +367,13 @@ def plan_cds_months(
                 log_msg("Please enter 'y' or 'n'.", logger, echo_console=echo_console)
 
     # Report
-    log_msg("\n=== Existing File Check ===", logger, echo_console=echo_console)
-    log_msg(f"Found {len(months_skipped)} existing monthly files.", logger, echo_console=echo_console)
+    log_msg("\n===> Checking for existing files...\n" + "-" * 60, logger, echo_console=echo_console)
     if months_skipped:
         for y, m, p in months_skipped[:5]:
             log_msg(f"  - {y}-{m:02d}: {p}", logger, echo_console=echo_console)
         if len(months_skipped) > 5:
             log_msg(f"  ... and {len(months_skipped)-5} more.", logger, echo_console=echo_console)
-    log_msg(f"Planned downloads: {len(months_to_download)} month(s).", logger, echo_console=echo_console)
+    log_msg(f"\tFound [{len(months_skipped)}] existing month(s) out of [{len(months_to_download)}] requested month(s)\n", logger, echo_console=echo_console)
 
     return months_to_download, months_skipped
 
@@ -438,10 +436,10 @@ def orchestrate_cds_downloads(
         return
 
     parallel_conf = session.get("parallel_settings") or {"enabled": False, "max_concurrent": 1}
-
+    t0 = perf_counter()
     if parallel_conf.get("enabled"):
         max_workers = max(2, int(parallel_conf.get("max_concurrent", 2)))
-        log_msg(f"\nParallel downloads enabled ({max_workers} concurrent tasks)...", logger, echo_console=echo_console)
+        log_msg(f"\nParallelisation : Enabled -> Beginning download with [{max_workers}] concurrent tasks...\n" + "-" * 60, logger, echo_console=echo_console)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             tasks = [
                 executor.submit(
@@ -462,7 +460,7 @@ def orchestrate_cds_downloads(
             for _ in as_completed(tasks):
                 pass
     else:
-        log_msg("\nRunning in sequential download mode...", logger, echo_console=echo_console)
+        log_msg(f"\nParallelisation : Disabled -> Beginning download in sequential download mode ...\n" + "-" * 60, logger, echo_console=echo_console)
         for (y, m) in months_to_download:
             download_cds_month(
                 session=session,
@@ -476,3 +474,6 @@ def orchestrate_cds_downloads(
                 failed_downloads=failed_downloads,
                 skipped_downloads=skipped_downloads,
             )
+    elapsed = perf_counter() - t0
+    log_msg(f"\nTotal download wall time: {format_duration(elapsed)}",
+            logger, echo_console=echo_console)

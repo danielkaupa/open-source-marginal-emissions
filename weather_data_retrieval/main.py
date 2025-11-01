@@ -12,12 +12,12 @@ if __name__ == "__main__" and __package__ is None:
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
-from io.cli import parse_args, run_prompt_wizard
-from io.config_loader import load_and_validate_config
-from utils.session_management import SessionState
-from runner import run
-from utils.logging import setup_logger, log_msg
-from utils.data_validation import default_save_dir
+from weather_data_retrieval.io.cli import parse_args, run_prompt_wizard
+from weather_data_retrieval.io.config_loader import load_and_validate_config
+from weather_data_retrieval.utils.session_management import SessionState
+from weather_data_retrieval.runner import run
+from weather_data_retrieval.utils.logging import setup_logger, log_msg
+from weather_data_retrieval.utils.data_validation import default_save_dir
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -46,7 +46,7 @@ def main():
             exit_code = run(config, run_mode=run_mode, verbose=verbose, logger=logger)
         else:
             # Wizard handles its own console echo; we still attach console handler via verbose=True above
-            completed = run_prompt_wizard(session, logger=logger, run_mode=run_mode)
+            completed = run_prompt_wizard(session, logger=logger)
             if not completed:
                 return
             config = session.to_dict()
@@ -60,7 +60,6 @@ def main():
             logger.exception(f"Critical error: {e}")
         else:
             print(f"Critical error: {e}")
-
 
 if __name__ == "__main__":
     main()

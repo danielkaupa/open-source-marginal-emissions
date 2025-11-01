@@ -7,6 +7,7 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+import math
 
 # ----------------------------------------------
 # FUNCTION IMPORTS
@@ -158,17 +159,17 @@ def estimate_era5_monthly_file_size(
 
 
 def estimate_cds_download(
-    variables: list[str],
-    area: list[float],
-    start_date: str,
-    end_date: str,
-    observed_speed_mbps: float,
-    grid_resolution: float = 0.25,
-    timestep_hours: float = 1.0,
-    bytes_per_value: float = 4.0,
-    overhead_per_request_s: float = 180.0,
-    overhead_per_var_s: float = 12.0,
-) -> dict:
+        variables: list[str],
+        area: list[float],
+        start_date: str,
+        end_date: str,
+        observed_speed_mbps: float,
+        grid_resolution: float = 0.25,
+        timestep_hours: float = 1.0,
+        bytes_per_value: float = 4.0,
+        overhead_per_request_s: float = 180.0,      # ignored but kept for signature consistency
+        overhead_per_var_s: float = 12.0,       # ignored but kept for signature consistency
+        ) -> dict:
     """
     Estimate per-file and total download size/time for CDS (ERA5) retrievals,
     using an empirically grounded file size model.
@@ -205,7 +206,7 @@ def estimate_cds_download(
           "total_time_sec": float
         }
     """
-    if not variables or not area:
+    if not variables or not area or not start_date or not end_date:
         return {
             "months": 0,
             "file_size_MB": 0.0,
@@ -214,12 +215,38 @@ def estimate_cds_download(
             "total_time_sec": 0.0,
         }
 
-    # --- Compute number of months
-    start = datetime.strptime(start_date, "%Y-%m-%d")
-    end = datetime.strptime(end_date, "%Y-%m-%d")
-    months = (end.year - start.year) * 12 + (end.month - start.month) + 1
+    # ---------- month list (inclusive) ----------
+    s = datetime.strptime(start_date, "%Y-%m-%d")
+    e = datetime.strptime(end_date, "%Y-%m-%d")
+    months = []
+    y, m = s.year, s.month
+    while (y < e.year) or (y == e.year and m <= e.month):
+        # days in this month
+        if m == 12:
+            next_first = datetime(y + 1, 1, 1)
+        else:
+            next_first = datetime(y, m + 1, 1)
+        this_first = datetime(y, m, 1)
+        dim = (next_first - this_first).days
+        months.append((y, m, dim))
+        if m == 12:
+            y, m = y + 1, 1
+        else:
+            m += 1
 
-    # --- Estimate per-month file size using the new empirical function
+    n_files = len(months)
+    n_vars = max(1, len(variables))
+
+    # ---------- area → grid cells ----------
+    north, west, south, east = map(float, area)
+    # handle wrap-around longitude
+    lon_span = (east - west) if east > west else (360.0 + east - west)
+    lat_span = max(0.0, north - south)
+    lat_cells = max(1, int(math.ceil(lat_span / grid_resolution)))
+    lon_cells = max(1, int(math.ceil(lon_span / grid_resolution)))
+    grid_cells = lat_cells * lon_cells
+
+    # ---------- file sizes (use your existing estimator for MB) ----------
     file_size_MB = estimate_era5_monthly_file_size(
         variables=variables,
         area=area,
@@ -227,27 +254,42 @@ def estimate_cds_download(
         timestep_hours=timestep_hours,
         bytes_per_value=bytes_per_value,
     )
+    total_size_MB = file_size_MB * n_files
 
-    total_size_MB = file_size_MB * months
+    # ---------- timing model constants (tune if you like) ----------
+    BASELINE_SEC   = 8.0        # small per-request overhead
+    UNITS_PER_SEC  = 8000.0     # processing throughput (units -> seconds); lower = more conservative
+    SERVER_CAP_MBPS = 80.0      # effective server-side cap (≈ 10 MB/s)
+    SAFETY_FACTOR  = 1.25       # pad for variability
 
-    # --- Compute transfer rates (convert Mbps → MB/s)
-    download_speed_MBps = max(observed_speed_mbps, 1.0) / 8.0  # Avoid zero/negatives
+    # effective MB/s (line vs server)
+    line_MBps = max(0.5, float(observed_speed_mbps) / 8.0)
+    srv_MBps  = max(0.5, SERVER_CAP_MBPS / 8.0)
+    eff_MBps  = min(line_MBps, srv_MBps)
 
-    # --- Per-file download time
-    time_per_file_s = (
-        (file_size_MB / download_speed_MBps)
-        + overhead_per_request_s
-        + (len(variables) * overhead_per_var_s)
-    )
+    per_file_secs = []
+    for (_, _, days_in_month) in months:
+        # how many time steps in this month
+        steps = int((24.0 / max(0.0001, timestep_hours)) * days_in_month)
 
-    total_time_s = time_per_file_s * months
+        # processing “units” = grid_cells × steps × vars
+        units = grid_cells * steps * n_vars
+        processing_sec = BASELINE_SEC + (units / UNITS_PER_SEC)
+
+        # network time from your size model
+        network_sec = file_size_MB / eff_MBps
+
+        per_file_secs.append((processing_sec + network_sec) * SAFETY_FACTOR)
+
+    time_per_file_sec = max(per_file_secs) if per_file_secs else 0.0
+    total_time_sec    = sum(per_file_secs)
 
     return {
-        "months": months,
+        "months": n_files,
         "file_size_MB": round(file_size_MB, 3),
         "total_size_MB": round(total_size_MB, 3),
-        "time_per_file_sec": round(time_per_file_s, 1),
-        "total_time_sec": round(total_time_s, 1),
+        "time_per_file_sec": round(time_per_file_sec, 1),
+        "total_time_sec": round(total_time_sec, 1),
     }
 
 
