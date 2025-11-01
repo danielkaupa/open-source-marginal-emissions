@@ -1,0 +1,41 @@
+site_name: OSME - Weather Data Retrieval- Documentation
+site_description: Retrieve ERA5‑Land and ERA5 weather data, interactively or via JSON config, with validation, logging, retries, and HPC‑friendly scripts.
+site_url: https://danielkaupa.github.io/open-source-marginal-emissions/weather_data_retrieval/
+repo_url: https://github.com/danielkaupa/open-source-marginal-emissions
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+  highlightjs: true  # Enable syntax highlighting
+  include_search_page: false  # Better search integration
+
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+      toc_depth: 1-3  # Control heading levels in TOC
+  - pymdownx.superfences  # Better code blocks
+  - pymdownx.highlight  # Syntax highlighting
+  - pymdownx.details  # Collapsible sections
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Codebase: codebase.md

@@ -1,0 +1,16 @@
+# repo-root/mkdocs.yml
+site_name: Open Source Marginal Emissions — Docs
+theme:
+  name: material
+plugins:
+  - search
+  - monorepo
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+
+nav:
+  - Weather Data Retrieval: '!include ./weather_data_retrieval/mkdocs.yml'
+  # - Another Package: '!include ./other_pkg/mkdocs.yml'
