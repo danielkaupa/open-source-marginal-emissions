@@ -1,0 +1,5 @@
+# Minimal package docs config (included by the root via monorepo plugin)
+docs_dir: .
+
+nav:
+  - Overview: README.md

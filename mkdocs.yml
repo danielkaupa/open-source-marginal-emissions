@@ -3,6 +3,7 @@ site_name: Open Source Marginal Emissions — Docs
 site_url: https://YOUR_GH_PAGES_URL_HERE
 repo_url: https://github.com/danielkaupa/open-source-marginal-emissions
 repo_name: danielkaupa/open-source-marginal-emissions
+strict: true
 
 # Use the repo root as docs so we can reference README.md and information/*
 docs_dir: .
@@ -18,7 +19,6 @@ theme:
     - toc.integrate
     - content.code.copy
     - content.tabs.link
-    - content.action.edit
   icon:
     repo: fontawesome/brands/github
   palette:
@@ -43,6 +43,7 @@ plugins:
             - packages/grid_data_retrieval/src
             - packages/data_cleaning_and_joining/src
             - packages/marginal_emissions_modelling/src
+            - packages/osme_common/src
           options:
             docstring_style: numpy
             show_root_heading: true
@@ -70,14 +71,17 @@ markdown_extensions:
 # Auto-reload when docs edited inside packages or code docstrings
 watch:
   - information
-  - packages/weather_data_retrieval/docs
-  - packages/grid_data_retrieval/docs
-  - packages/data_cleaning_and_joining/docs
-  - packages/marginal_emissions_modelling/docs
+  - packages/osme_common/src
+  - packages/osme_common/docs
   - packages/weather_data_retrieval/src
+  - packages/weather_data_retrieval/docs
   - packages/grid_data_retrieval/src
+  - packages/grid_data_retrieval/docs
   - packages/data_cleaning_and_joining/src
+  - packages/data_cleaning_and_joining/docs
   - packages/marginal_emissions_modelling/src
+  - packages/marginal_emissions_modelling/docs
+
 
 nav:
   - Overview:
@@ -91,3 +95,4 @@ nav:
       - Grid Data Retrieval: '!include ./packages/grid_data_retrieval/mkdocs.yml'
       - Data Cleaning and Joining: '!include ./packages/data_cleaning_and_joining/mkdocs.yml'
       - Marginal Emissions Modelling: '!include ./packages/marginal_emissions_modelling/mkdocs.yml'
+      - Shared utilities:        '!include ./packages/osme_common/mkdocs.yml'

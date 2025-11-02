@@ -9,9 +9,9 @@ dynamic = ["version"]  # Remove the static version field!
 description = "A modular toolkit for building **open-source, reproducible marginal emissions factors (MEFs)** anywhere in the world by combining **weather reanalysis** (ERA5/ERA5) with **electricity grid** datasets (e.g., IEA, Electricity Maps, Carbon Tracker India)"
 readme = {file = "README.md", content-type = "markdown"}
 authors = [{name="Daniel Kaupa", email="daniel.kaupa@outlook.com"}]
-license = {text = "LICENSE"}
+license = {file = "LICENSE"}
 classifiers = [
-  "License :: Free for non-commercial use"
+  "License :: OSI Approved :: GNU Affero General Public License v3",
 ]
 
 # Minor dependencies
@@ -148,9 +148,8 @@ mem = "marginal_emissions_modelling.main:main"
 # Common entry point
 osme = "osme_common.cli:main"  # If you create a unified CLI
 
-
 [tool.setuptools]
-license-files = ["LICENSE*", "COPYING*", "NOTICE*"]
+license-files = ["LICENSE*", "COPYING*", "NOTICE*", "COMMERCIAL*"]
 
 packages = [
     "osme_common",

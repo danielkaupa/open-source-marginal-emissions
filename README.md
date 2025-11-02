@@ -31,7 +31,7 @@ See information/core_concepts_and_definitions copy.md for terminology and concep
 
 
 License
-This project is released under the terms in LICENSE.txt.
+This project is released under the terms in [LICENSE.md](./LICENSE.md).
 
 Citation / Acknowledgements
 •	ERA5/ERA5-Land data provided by Copernicus Climate Change Service (C3S).
@@ -289,24 +289,23 @@ data/cache → temporary artifacts
 
 Roadmap & concepts
 
-Project roadmap and module‑level plans: information/ROADMAP.md
+Project roadmap and module‑level plans: [ROADMAP.md](./information/ROADMAP.md)
 
-Core concepts & definitions (Average vs. Marginal, Grid basics, etc.): information/core_concepts_and_definitions.md
+Core concepts & definitions (Average vs. Marginal, Grid basics, etc.): [CORE_CONCEPTS.md](./information/core_concepts_and_definitions.md)
 
 Contributing
 
-We welcome issues and PRs. Please see CONTRIBUTING.md for style (Black, Ruff), tests (pytest), and PR etiquette.
-
 License
 
-Non‑commercial use only. For commercial licensing, see LICENSE.txt.
+Non‑commercial use only. For commercial licensing, see [LICENSE.md](./LICENSE.md).
 
 Acknowledgements
 
-This work extends an MSc thesis at Imperial College London and benefited from support by collaborators and mentors. See information/ACKNOWLEDGEMENTS.md.
+This work extends an MSc thesis at Imperial College London and benefited from support by collaborators and mentors. See
+[ACKNOWLEDGEMENTS.md](./information/ACKNOWLEDGEMENTS.md).
 
 
 
 > **License:** AGPL-3.0-or-later **OR** Commercial License
 > For commercial use without AGPL obligations, email **daniel.kaupa@outlook.com**
-> See `COMMERCIAL-TERMS.md` and `LICENSE`.
+> See [COMMERCIAL-TERMS.md](./COMMERCIAL-TERMS.md) and [LICENSE.md](./LICENSE.md).
