@@ -304,3 +304,9 @@ Non‑commercial use only. For commercial licensing, see LICENSE.txt.
 Acknowledgements
 
 This work extends an MSc thesis at Imperial College London and benefited from support by collaborators and mentors. See information/ACKNOWLEDGEMENTS.md.
+
+
+
+> **License:** AGPL-3.0-or-later **OR** Commercial License
+> For commercial use without AGPL obligations, email **daniel.kaupa@outlook.com**
+> See `COMMERCIAL-LICENSE.md` and `LICENSE`.

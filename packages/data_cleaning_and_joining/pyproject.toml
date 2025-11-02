@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=70", "setuptools-scm>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-cleaning-and-joining"
+dynamic = ["version"]
+description = "Transform, validate, and join grid + weather datasets."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Daniel Kaupa", email = "daniel.kaupa@outlook.com" }]
+license = { file = "../../LICENSE.txt" }
+dependencies = [
+  "osme-common>=0.0.0",
+  "pandas>=2.0",
+  "polars>=0.20",
+  "pyarrow>=14",
+  "numpy>=1.24",
+  "pyyaml>=6",
+  "pydantic>=2.0",
+]
+urls = { Repository = "https://github.com/danielkaupa/open-source-marginal-emissions" }
+
+[project.optional-dependencies]
+geo = ["geopandas>=0.14", "shapely>=2.0", "pyproj>=3.6"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["data_cleaning_and_joining*"]
+
+[tool.setuptools.package-data]
+data_cleaning_and_joining = ["**/*.json", "**/*.yaml", "**/*.yml"]
+
+[tool.setuptools_scm]
+root = "../../"
+tag_regex = "^(?P<prefix>v)?(?P<version>\\d+\\.\\d+\\.\\d+)$"
+local_scheme = "node-and-date"
+fallback_version = "0.0.0"
+write_to = "src/data_cleaning_and_joining/_version.py"

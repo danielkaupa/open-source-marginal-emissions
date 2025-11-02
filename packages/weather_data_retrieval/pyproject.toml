@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=70", "setuptools-scm>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weather-data-retrieval"
+dynamic = ["version"]
+description = "Download and validate weather/reanalysis data (ERA5, Open-Meteo) for MEF workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Daniel Kaupa", email = "daniel.kaupa@outlook.com" }]
+license = { file = "../../LICENSE.txt" }
+dependencies = [
+  "osme-common>=0.0.0",     # satisfied locally via editable install in dev
+  "requests>=2.31",
+  "aiohttp>=3.8",
+  "tqdm>=4.66",
+  "pydantic>=2.0",
+  "pyyaml>=6",
+  "xarray>=2023.1",
+  "netCDF4>=1.6",
+  "cfgrib>=0.9",
+  "pandas>=2.0",
+  "cdsapi>=0.6.1",
+]
+urls = { Repository = "https://github.com/danielkaupa/open-source-marginal-emissions" }
+
+[project.scripts]
+osme-weather = "weather_data_retrieval.main:main"
+wdr = "weather_data_retrieval.main:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["weather_data_retrieval*"]
+
+# Include non-Python assets that the package uses at runtime (e.g., prompts, configs, shell helpers)
+[tool.setuptools.package-data]
+weather_data_retrieval = ["**/*.json", "**/*.yaml", "**/*.yml", "**/*.sh"]
+
+[tool.setuptools_scm]
+root = "../../"
+tag_regex = "^(?P<prefix>v)?(?P<version>\\d+\\.\\d+\\.\\d+)$"
+local_scheme = "node-and-date"
+fallback_version = "0.0.0"
+write_to = "src/weather_data_retrieval/_version.py"

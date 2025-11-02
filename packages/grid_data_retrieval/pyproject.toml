@@ -1,26 +1,38 @@
-# packages/osme_common/pyproject.toml
 [build-system]
-requires = ["setuptools>=70", "wheel"]
+requires = ["setuptools>=70", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "osme-common"
+name = "grid-data-retrieval"
 dynamic = ["version"]
-description = "Shared utilities for Open Source Marginal Emissions (paths, helpers, constants)."
+description = "Ingest and normalize electricity grid datasets for MEF workflows."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Daniel Kaupa", email = "daniel.kaupa@outlook.com" }]
 license = { file = "../../LICENSE.txt" }
-keywords = ["marginal-emissions", "energy-systems", "utilities"]
+dependencies = [
+  "osme-common>=0.0.0",
+  "requests>=2.31",
+  "pandas>=2.0",
+  "tqdm>=4.66",
+  "pydantic>=2.0",
+  "pyyaml>=6",
+]
 urls = { Repository = "https://github.com/danielkaupa/open-source-marginal-emissions" }
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["grid_data_retrieval*"]
 
+[tool.setuptools.package-data]
+grid_data_retrieval = ["**/*.json", "**/*.yaml", "**/*.yml"]
 
 [tool.setuptools_scm]
 root = "../../"
 tag_regex = "^(?P<prefix>v)?(?P<version>\\d+\\.\\d+\\.\\d+)$"
 local_scheme = "node-and-date"
 fallback_version = "0.0.0"
-write_to = "src/osme_common/_version.py"
+write_to = "src/grid_data_retrieval/_version.py"

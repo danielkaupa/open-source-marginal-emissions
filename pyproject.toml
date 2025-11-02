@@ -1,35 +1,285 @@
 [build-system]
-requires = ["setuptools>=70", "wheel"]
+requires = ["setuptools>=70", "wheel", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "weather-data-retrieval"
-version = "1.0.0"
-description = "Streamlined CDS & weather API retrieval tool (interactive or automatic) with validation, logging, and retries."
-readme = "README.md"
-requires-python = ">=3.9"
-authors = [{name="Daniel Kaupa"}]
+# General project metadata
+name = "open-source-marginal-emissions"
+dynamic = ["version"]  # Remove the static version field!
+description = "A modular toolkit for building **open-source, reproducible marginal emissions factors (MEFs)** anywhere in the world by combining **weather reanalysis** (ERA5/ERA5) with **electricity grid** datasets (e.g., IEA, Electricity Maps, Carbon Tracker India)"
+readme = {file = "README.md", content-type = "markdown"}
+authors = [{name="Daniel Kaupa", email="daniel.kaupa@outlook.com"}]
 license = {text = "LICENSE.txt"}
-dependencies = [
-  "cdsapi>=0.6.1",
-  "requests>=2.31",
-  "tqdm>=4.66"
-]
-
 classifiers = [
   "License :: Free for non-commercial use"
 ]
 
+# Minor dependencies
+requires-python = ">=3.11"
+dependencies = [
+  # basics
+  "numpy>=1.21.0",
+  "scikit-learn>=1.0.0",
+  "pandas>=1.3.0",
+  "scipy>=1.7.0",
+
+  # data retrieval
+  "cdsapi>=0.6.1",
+  "requests>=2.31",
+  "aiohttp>=3.8.0",
+
+  # configuration and utilities
+  "pydantic>=1.9.0",
+  "python-dotenv>=0.19.0",
+  "pyyaml>=6.0",
+  "tqdm>=4.66"
+
+  # geo-data
+  "cfgrib>=0.9.0"
+  "netCDF4>=1.5.0",
+  "xarray>=0.19.0",
+]
+
+# Extra project metadata for dicsoverability
+
+keywords = [
+    "carbon-emissions",
+    "marginal-emissions",
+    "carbon-intensity",
+    "electricity-grid",
+    "energy-transition",
+    "climate-modeling",
+    "weather-data",
+    "energy-data",
+    "sustainability",
+    "carbon-accounting",
+    "renewable-energy",
+    "grid-carbon-intensity",
+    "emissions-factors",
+    "climate-tech",
+    "energy-systems",
+    "data-science",
+    "environmental",
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Energy Industry",
+    "Intended Audience :: Climate Technology",
+    "Topic :: Scientific/Engineering :: Electrical Engineering",
+    "Topic :: Scientific/Engineering :: Environmental Science",
+    "Topic :: Scientific/Engineering :: Data Science",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Framework :: Jupyter",
+    "Framework :: Pytest",
+]
+
+
 [project.optional-dependencies]
-dev = ["pytest>=8", "build>=1.2"]
+
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-mock>=3.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+    "jupyter>=1.0.0",
+    "ipykernel>=6.0.0",
+]
+
+# Testing extras
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-mock>=3.0.0",
+    "pytest-testmon>=1.0.0",
+]
+
+# Documentation
+docs = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.20.0",
+    "mkdocs-autorefs>=0.4.0",
+    "mkdocs-awesome-pages-plugin>=2.8.0",
+]
+
+modeling = [
+    "statsmodels>=0.13.0",
+    "joblib>=1.2.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.12.0",
+    "plotly>=5.13.0",
+]
+
+all = [
+    "open-source-marginal-emissions[modeling, dev, docs]",
+]
+
+[project.urls]
+Documentation = "FILL IN DOCUMENTATION WEBSITE HERE"
+Repository = "https://github.com/danielkaupa/open-source-marginal-emissions"
+
 
 [project.scripts]
+# Primary descriptive names
+osme-weather = "weather_data_retrieval.main:main"
+osme-grid = "grid_data_retrieval.main:main"
+osme-clean = "data_cleaning_and_joining.main:main"
+osme-model = "marginal_emissions_modelling.main:main"
+
+# Short aliases (optional but convenient)
 wdr = "weather_data_retrieval.main:main"
+gdr = "grid_data_retrieval.main:main"
+dcaj = "data_cleaning_and_joining.main:main"
+mem = "marginal_emissions_modelling.main:main"
+
+# Common entry point
+osme = "osme_common.cli:main"  # If you create a unified CLI
 
 
 [tool.setuptools]
 license-files = ["LICENSE*", "COPYING*", "NOTICE*"]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["weather_data_retrieval*"]
+packages = [
+    "osme_common",
+    "weather_data_retrieval",
+    "grid_data_retrieval",
+    "data_cleaning_and_joining",
+    "marginal_emissions_modelling",
+]
+
+[tool.setuptools_scm]
+root = "."
+tag_regex = "^(?P<prefix>v)?(?P<version>\\d+\\.\\d+\\.\\d+)$"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
+
+
+[tool.setuptools.package-dir]
+osme_common = "packages/osme_common/src/osme_common"
+weather_data_retrieval = "packages/weather_data_retrieval/src/weather_data_retrieval"
+grid_data_retrieval = "packages/grid_data_retrieval/src/grid_data_retrieval"
+data_cleaning_and_joining = "packages/data_cleaning_and_joining/src/data_cleaning_and_joining"
+marginal_emissions_modelling = "packages/marginal_emissions_modelling/src/marginal_emissions_modelling"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "packages"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--color=yes",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=packages",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--durations=10",
+]
+
+
+# COVERAGE CONFIGURATION
+[tool.coverage.run]
+source = ["packages"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/version.py",
+    "*/setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\b":",
+    "@(abc\\.)?abstractmethod",
+]
+
+
+# CODE QUALITY TOOLS
+[tool.black]
+line-length = 120
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 120
+known_first_party = ["osme_common", "weather_data_retrieval", "grid_data_retrieval", "data_cleaning_and_joining", "marginal_emissions_modelling"]
+
+[tool.flake8]
+max-line-length = 120  # Match Black
+extend-ignore = ["E203", "W503", "E501"]  # E501 is line too long - we want this!
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    "docs",
+    "notebooks",
+]
+per-file-ignores = [
+    "__init__.py:F401",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+# DOCUMENTATION CONFIGURATION
+[tool.mkdocs]
+site_name = "Open Source Marginal Emissions"
+site_description = "A modular toolkit for building **open-source, reproducible marginal emissions factors (MEFs)** anywhere in the world by combining **weather reanalysis** (ERA5/ERA5) with **electricity grid** datasets (e.g., IEA, Electricity Maps, Carbon Tracker India)"
+site_url = "INPUT WEBSITE URL HERE"
+repo_url = "https://github.com/open-marginal-emissions/open-source-marginal-emissions"
+repo_name = "open-source-marginal-emissions"
+
+# PRE-COMMIT CONFIGURATION
+[tool.pre-commit]
+default_language_version = "python3"

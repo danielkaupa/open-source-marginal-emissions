@@ -1,21 +1,12 @@
-Copyright © 2025 Daniel Kaupa
+GNU AFFERO GENERAL PUBLIC LICENSE v3.0 (AGPL-3.0-or-later)
+==========================================================
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software for non-commercial purposes only, subject to the following
-conditions:
+This project is **Free Software** released under the terms of the **GNU Affero General Public License, version 3 or (at your option) any later version**.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software for non-commercial use.
+You are permitted to use, copy, modify, and distribute this software under the terms of the AGPL, **provided that** you comply with its copyleft requirements, including making the Corresponding Source available to users who interact with the software over a network.
 
-COMMERCIAL USE IS EXPRESSLY PROHIBITED WITHOUT PRIOR WRITTEN PERMISSION FROM
-THE COPYRIGHT HOLDER. For licensing inquiries or commercial use, please
-contact daniel.kaupa@outlook.com
+- SPDX-License-Identifier: **AGPL-3.0-or-later**
+- Full license text: https://www.gnu.org/licenses/agpl-3.0.txt
+- FSF overview: https://www.gnu.org/licenses/agpl-3.0.en.html
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Copyright © {2025} Daniel Kaupa
