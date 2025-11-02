@@ -18,6 +18,21 @@
 # along with this program, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+
+"""
+Main entry point for the Weather Data Retrieval CLI.
+
+This script can be run either:
+  - Automatically via a configuration file (`--config path/to/config.json`), or
+  - Interactively through a guided prompt wizard.
+
+It handles session management, logging setup, and orchestration of
+the retrieval workflow defined in `weather_data_retrieval.runner`.
+
+Typically invoked through the CLI command: `osme-weather` or `wdr`.
+"""
+
+
 # ----------------------------------------------
 # LIBRARY IMPORTS
 # ----------------------------------------------
