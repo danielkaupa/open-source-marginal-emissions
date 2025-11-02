@@ -1,0 +1,12 @@
+GNU AFFERO GENERAL PUBLIC LICENSE v3.0 (AGPL-3.0-or-later)
+==========================================================
+
+This project is **Free Software** released under the terms of the **GNU Affero General Public License, version 3**.
+
+You are permitted to use, copy, modify, and distribute this software under the terms of the AGPL, **provided that** you comply with its copyleft requirements, including making the Corresponding Source available to users who interact with the software over a network.
+
+- SPDX-License-Identifier: **AGPL-3.0-or-later**
+- Full license text: https://www.gnu.org/licenses/agpl-3.0.txt
+- FSF overview: https://www.gnu.org/licenses/agpl-3.0.en.html
+
+Copyright © {2025} Daniel Kaupa
