@@ -1,4 +1,5 @@
-# Minimal package docs config (included by the root via monorepo plugin)
+# marginal_emissions_modelling mkdocs.yml
+site_name: OSME - Marginal Emissions Modelling - Documentation
 docs_dir: docs
 
 nav:

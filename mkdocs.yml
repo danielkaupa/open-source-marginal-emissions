@@ -3,10 +3,9 @@ site_name: Open Source Marginal Emissions — Docs
 site_url: https://YOUR_GH_PAGES_URL_HERE
 repo_url: https://github.com/danielkaupa/open-source-marginal-emissions
 repo_name: danielkaupa/open-source-marginal-emissions
-strict: true
+# strict: true
 
-# Use the repo root as docs so we can reference README.md and information/*
-docs_dir: .
+docs_dir: information
 
 theme:
   name: material
@@ -72,7 +71,6 @@ markdown_extensions:
 watch:
   - information
   - packages/osme_common/src
-  - packages/osme_common/docs
   - packages/weather_data_retrieval/src
   - packages/weather_data_retrieval/docs
   - packages/grid_data_retrieval/src
@@ -85,10 +83,10 @@ watch:
 
 nav:
   - Overview:
-      - Introduction to this Repository: README.md
-      - Core Concepts and Definitions: information/CORE_CONCEPTS_AND_DEFINITIONS.md
-      - Project Roadmap: information/PROJECT_ROADMAP.md
-      - Acknowledgements: information/ACKNOWLEDGEMENTS.md
+      - Introduction to this Repository: index.md
+      - Core Concepts and Definitions: CORE_CONCEPTS_AND_DEFINITIONS.md
+      - Project Roadmap: PROJECT_ROADMAP.md
+      - Acknowledgements: ACKNOWLEDGEMENTS.md
 
   - Packages:
       - Weather Data Retrieval: '!include ./packages/weather_data_retrieval/mkdocs.yml'

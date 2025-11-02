@@ -21,7 +21,7 @@ from typing import Optional
 _MARKERS = {
     ".git",
     "LICENSE",
-    "LICENSE.txt",
+    "LICENSE.MD",
     "packages",
     "information",
     "environment.yml",

@@ -10,9 +10,6 @@ description = "A modular toolkit for building **open-source, reproducible margin
 readme = {file = "README.md", content-type = "markdown"}
 authors = [{name="Daniel Kaupa", email="daniel.kaupa@outlook.com"}]
 license = {file = "LICENSE"}
-classifiers = [
-  "License :: OSI Approved :: GNU Affero General Public License v3",
-]
 
 # Minor dependencies
 requires-python = ">=3.11"
@@ -32,15 +29,15 @@ dependencies = [
   "pydantic>=1.9.0",
   "python-dotenv>=0.19.0",
   "pyyaml>=6.0",
-  "tqdm>=4.66"
+  "tqdm>=4.66",
 
   # geo-data
-  "cfgrib>=0.9.0"
+  "cfgrib>=0.9.0",
   "netCDF4>=1.5.0",
   "xarray>=0.19.0",
 ]
 
-# Extra project metadata for dicsoverability
+# Extra project metadata for discoverability
 
 keywords = [
     "carbon-emissions",
@@ -63,6 +60,7 @@ keywords = [
 ]
 
 classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
@@ -80,9 +78,7 @@ classifiers = [
     "Framework :: Pytest",
 ]
 
-
 [project.optional-dependencies]
-
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -113,6 +109,7 @@ docs = [
     "mkdocstrings[python]>=0.20.0",
     "mkdocs-autorefs>=0.4.0",
     "mkdocs-awesome-pages-plugin>=2.8.0",
+    "mkdocs-monorepo-plugin>=0.6.0",
 ]
 
 modeling = [
@@ -138,6 +135,11 @@ osme-weather = "weather_data_retrieval.main:main"
 osme-grid = "grid_data_retrieval.main:main"
 osme-clean = "data_cleaning_and_joining.main:main"
 osme-model = "marginal_emissions_modelling.main:main"
+
+osme-wdr = "weather_data_retrieval.main:main"
+osme-gdr = "grid_data_retrieval.main:main"
+osme-dcaj = "data_cleaning_and_joining.main:main"
+osme-mem = "marginal_emissions_modelling.main:main"
 
 # Short aliases (optional but convenient)
 wdr = "weather_data_retrieval.main:main"
@@ -212,7 +214,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\b":",
+    "class .*\\bProtocol\\b:",
     "@(abc\\.)?abstractmethod",
 ]
 
@@ -243,7 +245,7 @@ known_first_party = ["osme_common", "weather_data_retrieval", "grid_data_retriev
 
 [tool.flake8]
 max-line-length = 120  # Match Black
-extend-ignore = ["E203", "W503", "E501"]  # E501 is line too long - we want this!
+extend-ignore = ["E203", "W503", "E501"]  # E501 is line too long
 exclude = [
     ".git",
     "__pycache__",

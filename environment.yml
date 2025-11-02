@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
+  - pip
     # Core numerics, data manipulation
   - numpy
   - pandas
@@ -28,26 +29,33 @@ dependencies:
   - jupyter
   - requests
   - tqdm
+
+    # Dev tools available on conda-forge
+  - black
+  - ruff
+  - pytest
+  - pytest-cov
+  - pre-commit
+  - build
+
+   # Documentation tools available on conda-forge
+  - mkdocs
+  - mkdocs-material
+  - mkdocstrings-python
+
   - pip:
       # editable installs for local packages
-      - -e packages/weather_data_retrieval
-      - -e packages/grid_data_retrieval
-      - -e packages/data_cleaning_and_joining
-      - -e packages/marginal_emissions_modelling
+
+      - -e .
+      # - -e packages/weather_data_retrieval
+      # - -e packages/grid_data_retrieval
+      # - -e packages/data_cleaning_and_joining
+      # - -e packages/marginal_emissions_modelling
+      # - -e packages/osme_common
 
       # dependencies
       - cdsapi
 
-      # dev tools
-      - black
-      - ruff
-      - pytest
-      - pytest-cov
-      - build
-
       # documentation tools
-      - mkdocs
-      - mkdocs-material
       - mkdocstrings
-      - mkdocstrings-python
       - mkdocs-awesome-pages-plugin

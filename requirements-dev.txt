@@ -3,8 +3,7 @@
 -e packages/grid_data_retrieval
 -e packages/data_cleaning_and_joining
 -e packages/marginal_emissions_modelling
-# If you add a shared helpers lib later:
-# -e libs/osme_common
+-e packages/osme_common
 
 # Dev / testing
 black>=24.0
