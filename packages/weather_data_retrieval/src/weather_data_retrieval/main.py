@@ -1,6 +1,22 @@
-if __name__ == "__main__" and __package__ is None:
-    import os, sys
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# packages/weather_data_retrieval/src/weather_data_retrieval/main.py
+
+# =============================================================================
+# Copyright © {2025} Daniel Kaupa
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# =============================================================================
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# If you did not receive a copy of the GNU Affero General Public License
+# along with this program, see <https://www.gnu.org/licenses/>.
+# =============================================================================
 
 # ----------------------------------------------
 # LIBRARY IMPORTS
@@ -17,7 +33,7 @@ from weather_data_retrieval.io.config_loader import load_and_validate_config
 from weather_data_retrieval.utils.session_management import SessionState
 from weather_data_retrieval.runner import run
 from weather_data_retrieval.utils.logging import setup_logger, log_msg
-from weather_data_retrieval.utils.data_validation import default_save_dir
+from osme_common.paths import data_dir
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -31,6 +47,17 @@ from weather_data_retrieval.utils.data_validation import default_save_dir
 
 
 def main():
+    """
+    Entry point for the Weather Data Retrieval CLI.
+
+    This function:
+      1. Parses CLI arguments or launches the interactive prompt wizard.
+      2. Loads or builds a configuration file for weather dataset download.
+      3. Initializes logging via `osme_common.paths.data_dir()`.
+      4. Executes the main retrieval workflow using `weather_data_retrieval.runner.run`.
+
+    Automatically invoked by the `osme-weather` CLI script.
+    """
     args = parse_args()
     session = SessionState()
 
@@ -38,7 +65,7 @@ def main():
     verbose = bool(args.verbose) if run_mode == "automatic" else True  # interactive is always verbose
 
     # Initialize logger (console handler is attached when interactive or verbose)
-    logger = setup_logger(str(default_save_dir), run_mode=run_mode, verbose=verbose)
+    logger = setup_logger(str(data_dir(create=True)), run_mode=run_mode, verbose=verbose)
 
     try:
         if run_mode == "automatic":

@@ -31,7 +31,7 @@ See information/core_concepts_and_definitions copy.md for terminology and concep
 
 
 License
-This project is released under the terms in [LICENSE.md](./LICENSE.md).
+This project is released under the terms in [LICENSE](./LICENSE).
 
 Citation / Acknowledgements
 •	ERA5/ERA5-Land data provided by Copernicus Climate Change Service (C3S).
@@ -297,7 +297,7 @@ Contributing
 
 License
 
-Non‑commercial use only. For commercial licensing, see [LICENSE.md](./LICENSE.md).
+Non‑commercial use only. For commercial licensing, see [LICENSE](./LICENSE).
 
 Acknowledgements
 
@@ -308,4 +308,4 @@ This work extends an MSc thesis at Imperial College London and benefited from su
 
 > **License:** AGPL-3.0-or-later **OR** Commercial License
 > For commercial use without AGPL obligations, email **daniel.kaupa@outlook.com**
-> See [COMMERCIAL-TERMS.md](./COMMERCIAL-TERMS.md) and [LICENSE.md](./LICENSE.md).
+> See [COMMERCIAL-TERMS.md](./COMMERCIAL-TERMS.md) and [LICENSE](./LICENSE).

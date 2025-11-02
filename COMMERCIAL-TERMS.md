@@ -6,7 +6,7 @@
 
 Hello! This project is **dual-licensed**:
 
-- **Open Source:** GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See [LICENSE](./LICENSE.md) for details.
+- **Open Source:** GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See [LICENSE](./LICENSE) for details.
 - **Commercial:** For **proprietary** use (e.g., shipping closed-source products or offering OSME as a hosted service without releasing your changes), you **must obtain a commercial license**.
 
 Commercial use is only permitted **after direct confirmation** from Daniel Kaupa ([daniel.kaupa@outlook.com](mailto:daniel.kaupa@outlook.com?subject=OSME%20Commercial%20License)).
