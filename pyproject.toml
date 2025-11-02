@@ -9,7 +9,7 @@ dynamic = ["version"]  # Remove the static version field!
 description = "A modular toolkit for building **open-source, reproducible marginal emissions factors (MEFs)** anywhere in the world by combining **weather reanalysis** (ERA5/ERA5) with **electricity grid** datasets (e.g., IEA, Electricity Maps, Carbon Tracker India)"
 readme = {file = "README.md", content-type = "markdown"}
 authors = [{name="Daniel Kaupa", email="daniel.kaupa@outlook.com"}]
-license = {text = "LICENSE.txt"}
+license = {text = "LICENSE"}
 classifiers = [
   "License :: Free for non-commercial use"
 ]

@@ -309,4 +309,4 @@ This work extends an MSc thesis at Imperial College London and benefited from su
 
 > **License:** AGPL-3.0-or-later **OR** Commercial License
 > For commercial use without AGPL obligations, email **daniel.kaupa@outlook.com**
-> See `COMMERCIAL-LICENSE.md` and `LICENSE`.
+> See `COMMERCIAL-TERMS.md` and `LICENSE`.

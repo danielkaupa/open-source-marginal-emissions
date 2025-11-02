@@ -9,4 +9,4 @@ You are permitted to use, copy, modify, and distribute this software under the t
 - Full license text: https://www.gnu.org/licenses/agpl-3.0.txt
 - FSF overview: https://www.gnu.org/licenses/agpl-3.0.en.html
 
-Copyright © {2025} Daniel Kaupa
+Copyright © 2025 Daniel Kaupa
