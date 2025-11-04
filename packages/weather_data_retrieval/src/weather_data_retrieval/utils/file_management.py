@@ -277,26 +277,25 @@ def estimate_cds_download(
     total_size_MB = file_size_MB * n_files
 
     # ---------- timing model constants (tune if you like) ----------
-    BASELINE_SEC   = 8.0        # small per-request overhead
-    UNITS_PER_SEC  = 8000.0     # processing throughput (units -> seconds); lower = more conservative
-    SERVER_CAP_MBPS = 80.0      # effective server-side cap (≈ 10 MB/s)
-    SAFETY_FACTOR  = 1.25       # pad for variability
+    BASELINE_SEC   = 30.0            # small per-request overhead
+    UNITS_PER_SEC  = 8_000_000.0     # processing throughput (units -> seconds); lower = more conservative
+    SERVER_CAP_Mbps = 400.0          # upper network cap in megabits/sec (≈ 50 MB/s)
+    SAFETY_FACTOR  = 5.0             # inflate to capture throttling, retries, etc.
 
-    # effective MB/s (line vs server)
+    # Effective MB/s (convert from Mbps → MB/s)
     line_MBps = max(0.5, float(observed_speed_mbps) / 8.0)
-    srv_MBps  = max(0.5, SERVER_CAP_MBPS / 8.0)
+    srv_MBps  = max(0.5, SERVER_CAP_Mbps / 8.0)
     eff_MBps  = min(line_MBps, srv_MBps)
 
     per_file_secs = []
     for (_, _, days_in_month) in months:
-        # how many time steps in this month
         steps = int((24.0 / max(0.0001, timestep_hours)) * days_in_month)
 
         # processing “units” = grid_cells × steps × vars
         units = grid_cells * steps * n_vars
         processing_sec = BASELINE_SEC + (units / UNITS_PER_SEC)
 
-        # network time from your size model
+        # network time based on file size and effective MB/s
         network_sec = file_size_MB / eff_MBps
 
         per_file_secs.append((processing_sec + network_sec) * SAFETY_FACTOR)
@@ -309,7 +308,7 @@ def estimate_cds_download(
         "file_size_MB": round(file_size_MB, 3),
         "total_size_MB": round(total_size_MB, 3),
         "time_per_file_sec": round(time_per_file_sec, 1),
-        "total_time_sec": round(total_time_sec, 1),
+        "total_time_sec": round(number=total_time_sec, ndigits=1),
     }
 
 def expected_save_path(

@@ -27,6 +27,6 @@ python -c "import weather_data_retrieval as m; print('wdr package OK:', getattr(
 
 # Run non-interactive with JSON config
 # Prefer module mode for proper package imports:
-python -m weather_data_retrieval --config input/download_request_land.json --verbose
+python -m weather_data_retrieval --config weather/download_request_land.json --verbose
 
 echo "=== Job $JOBNAME (ID $JOBID) finished on $(hostname) at $(date) ==="

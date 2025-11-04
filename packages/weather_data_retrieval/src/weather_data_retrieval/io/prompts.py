@@ -43,7 +43,7 @@ from weather_data_retrieval.utils.data_validation import (
     validate_variables
 )
 from weather_data_retrieval.utils.logging import log_msg
-
+from osme_common.paths import data_dir, resolve_under
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -325,12 +325,13 @@ def prompt_save_directory(
         raw = read_input("\nEnter a path (or press Enter to use default): ", logger=logger)
         if raw in ("__EXIT__", "__BACK__"):
             return raw
-        path = Path(raw or default_dir).expanduser().resolve()
-        if validate_directory(str(path)):
-            say(f"\nYou set the save directory to: {path}\n", logger=logger)
-            session.set("save_dir", path)
-            return path
-        say(f"ERROR: Directory [{path}] could not be created or accessed. Try another path.", logger=logger)
+        # resolve under repo_root/data if relative
+        resolved_path = resolve_under(data_dir(create=True), raw or default_dir)
+        if validate_directory(str(resolved_path)):
+            say(f"\nYou set the save directory to: {resolved_path}\n", logger=logger)
+            session.set("save_dir", resolved_path)
+            return resolved_path
+        say(f"ERROR: Directory [{resolved_path}] could not be created or accessed. Try another path.", logger=logger)
 
 
 # 6 & 7 - DATE RANGE (start_date, end_date)

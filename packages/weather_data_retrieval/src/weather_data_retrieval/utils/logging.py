@@ -37,7 +37,6 @@ from tqdm import tqdm
 
 from osme_common.paths import log_dir, data_dir, resolve_under
 
-
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
 # ----------------------------------------------
@@ -49,6 +48,20 @@ from osme_common.paths import log_dir, data_dir, resolve_under
 # ----------------------------------------------
 
 def _format_duration(seconds: float) -> str:
+    """
+    Format a duration in seconds into a human-readable string.
+    Reimplements format_duration from data_validation to avoid circular imports.
+
+    Parameters
+    ----------
+    seconds : float
+        Duration in seconds.
+    Returns
+    -------
+    str
+        Formatted duration string.
+    """
+
     seconds = max(0, seconds)
     hours = int(seconds // 3600)
     days = int(hours // 24)
@@ -97,8 +110,8 @@ def build_download_summary(session: Any,
         f"Parallelisation: {session.get('parallel_settings')}\n\n"
         f"----------------------------------------\n\n"
         f"Estimated number of monthly files: {estimates['months']}\n"
-        f"Estimated size per file: {estimates['file_size_MB']:.1f} MB\n"
-        f"Estimated total size: {estimates['total_size_MB']:.1f} MB\n\n"
+        f"Estimated size per file: {estimates['file_size_MB']:,.1f} MB\n"
+        f"Estimated total size: {estimates['total_size_MB']:,.1f} MB\n\n"
         f"Measured connection speed: {speed_mbps:.4f} Mbps\n\n"
         f"Estimated maximum time per file: {_format_duration(estimates['time_per_file_sec'])}\n"
         f"Estimated maximum total time: {_format_duration(estimates['total_time_sec'])}\n"

@@ -48,6 +48,7 @@ from weather_data_retrieval.utils.data_validation import (
     default_save_dir,
 )
 from weather_data_retrieval.utils.logging import log_msg
+from osme_common.paths import data_dir, resolve_under
 # from weather_data_retrieval.utils.logging import format_duration
 
 # ----------------------------------------------
@@ -405,12 +406,16 @@ def map_config_to_session(
             messages.append(f"variables = {', '.join(valid)}")
 
     # ---------- Save directory ----------
-    save_dir = cfg.get("save_dir", str(default_save_dir))
-    if not validate_directory(save_dir):
-        errors.append(f"Cannot access/create save_dir: {save_dir}")
-    else:
-        session.set("save_dir", Path(save_dir))
-        messages.append(f"save_dir = {save_dir}")
+    raw_save_dir = cfg.get("save_dir", str(default_save_dir))
+    try:
+        resolved_save_dir = resolve_under(data_dir(create=True), raw_save_dir)
+        if not validate_directory(resolved_save_dir):
+            errors.append(f"Cannot access/create save_dir: {resolved_save_dir}")
+        else:
+            session.set("save_dir", str(resolved_save_dir))
+            messages.append(f"save_dir resolved to: {resolved_save_dir}")
+    except Exception as e:
+        errors.append(f"Failed to resolve save_dir '{raw_save_dir}': {e}")
 
     # ---------- Existing file policy ----------
     efa_raw = cfg.get("existing_file_action", cfg.get("file_policy", "case_by_case"))
@@ -462,7 +467,7 @@ def map_config_to_session(
     if errors:
         for e in errors:
             print("CONFIG ERROR:", e)
-        return False, messages + errors
+        return False, messages + [f"ERROR: {e}" for e in errors]
     return True, messages
 
 

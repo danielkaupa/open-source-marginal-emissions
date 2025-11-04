@@ -47,6 +47,7 @@ from weather_data_retrieval.utils.session_management import (
 from weather_data_retrieval.utils.data_validation import (
     format_coordinates_nwse,
     validate_config,
+    format_duration,
 )
 from weather_data_retrieval.utils.file_management import (
     generate_filename_hash,
@@ -131,7 +132,10 @@ def run(
         if not ok:
             log_msg("Config mapping reported blocking issues. Exiting.",
                     logger, level="error", echo_console=echo_only_if_no_console_handler(True))
-            create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+            if "filename_base" in locals():
+                create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+            else:
+                log_msg("Skipping final log file creation because filename_base was not defined (run failed early).", logger)
             return 1
 
         # 2b) Automatic mode cannot be case-by-case for existing file policy (already coerced by validate_config)
@@ -165,7 +169,7 @@ def run(
             max_conc = max(1, int(parallel_conf["max_concurrent"]))
             estimates["total_time_sec"] = estimates["total_time_sec"] / (max_conc * efficiency_factor)
             log_msg(
-                f"Adjusted total time for parallel downloads: {estimates['total_time_sec']:.1f} sec",
+                f"Adjusted total time for parallel downloads: {format_duration(estimates['total_time_sec'])}",
                 logger, echo_console=echo_only_if_no_console_handler(False)
             )
 

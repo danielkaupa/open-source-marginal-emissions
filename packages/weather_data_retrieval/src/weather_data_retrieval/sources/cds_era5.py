@@ -46,7 +46,11 @@ from weather_data_retrieval.utils.data_validation import (
     month_days,
     validate_existing_file_action,
 )
-from weather_data_retrieval.utils.file_management import find_existing_month_file
+from osme_common.paths import data_dir, resolve_under
+from weather_data_retrieval.utils.file_management import (
+    find_existing_month_file,
+    expected_save_path,
+)
 from weather_data_retrieval.io.prompts import read_input
 from weather_data_retrieval.utils.logging import log_msg
 
@@ -104,12 +108,16 @@ def prepare_cds_download(
     cfg = get_cds_dataset_config(session, dataset_config_mapping)
     data_file_format = cfg.get("data_download_format", "grib")
 
-    save_dir = str(session.get("save_dir"))
-    policy = session.get("existing_file_action")  # 'overwrite_all' | 'skip_all' | 'case_by_case'
-    save_path = os.path.join(save_dir, f"{filename_base}_{year}_{month:02d}.{data_file_format}")
+    # Resolve base save directory
+    raw_save_dir = session.get("save_dir") or data_dir(create=True)
+    save_dir = resolve_under(data_dir(create=True), raw_save_dir)
+
+    # Construct canonical save path
+    save_path = expected_save_path(save_dir, filename_base, year, month, data_file_format)
+    policy = session.get("existing_file_action") or "case_by_case"
     download = True
 
-    if os.path.exists(save_path):
+    if save_path.exists():
         if policy == "skip_all":
             log_msg(f"Skipping existing file for {year}-{month:02d}: {save_path}", logger, echo_console=echo_console)
             download = False
@@ -224,7 +232,7 @@ def execute_cds_download(
                     "area": grid_area,
                     "format": data_download_format,
                 },
-                save_path,
+                str(save_path),
             )
             elapsed = time.time() - month_start
             log_msg(f"SUCCESS: {year}-{month:02d} in {format_duration(elapsed)}", logger, echo_console=echo_console)
@@ -368,6 +376,7 @@ def plan_cds_months(
         if policy == "skip_all":
             months_skipped.append((y, m, existing))
         elif policy == "overwrite_all":
+            months_skipped.append((y, m, existing))
             months_to_download.append((y, m))
         else:
             # interactive 'case_by_case'
@@ -393,7 +402,8 @@ def plan_cds_months(
             log_msg(f"  - {y}-{m:02d}: {p}", logger, echo_console=echo_console)
         if len(months_skipped) > 5:
             log_msg(f"  ... and {len(months_skipped)-5} more.", logger, echo_console=echo_console)
-    log_msg(f"\tFound [{len(months_skipped)}] existing month(s) out of [{len(months_to_download)}] requested month(s)\n", logger, echo_console=echo_console)
+    log_msg(f"\tFound [{len(months_skipped)}] existing month(s) out of [{len(months)}] requested month(s)\n", logger, echo_console=echo_console)
+    log_msg(f"Policy for existing files: '{policy}'", logger, echo_console=echo_console)
 
     return months_to_download, months_skipped
 

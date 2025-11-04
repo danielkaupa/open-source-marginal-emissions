@@ -1,4 +1,16 @@
 from importlib.metadata import PackageNotFoundError, version
+
+
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("osme-common")
+except PackageNotFoundError:
+    __version__ = "0+unknown"
+
+__all__ = ["__version__"]
+
+
 from .paths import (
     repo_root,
     data_dir,
