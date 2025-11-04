@@ -62,6 +62,8 @@ from weather_data_retrieval.io.config_loader import (
     load_and_validate_config,
     load_config
 )
+from osme_common.paths import data_dir, log_dir, resolve_under
+
 
 # ----------------------------------------------
 # FUNCTION DEFINITIONS
@@ -101,8 +103,14 @@ def run(
         # Return True to echo only selected messages (summary, warnings/errors/exceptions).
         return force and (not console_handler_active)
 
+    save_base = config.get("save_dir")
+    if save_base:
+        save_path = resolve_under(data_dir(create=True), save_base)
+    else:
+        save_path = data_dir(create=True)
+
     if logger is None:
-        logger = setup_logger(str(config.get("save_dir", ".")), run_mode=run_mode, verbose=verbose)
+        logger = setup_logger(str(log_dir(create=True)), run_mode=run_mode, verbose=verbose)
 
     # Header
     log_msg("=" * 60, logger, echo_console=echo_only_if_no_console_handler(False))
@@ -162,7 +170,7 @@ def run(
             )
 
         # 5) Filename + hash
-        coord_str = format_coordinates_nwse(session.get("region_bounds"))
+        coord_str = format_coordinates_nwse(boundaries=session.get("region_bounds"))
         hash_str = generate_filename_hash(
             dataset_short_name=session.get("dataset_short_name"),
             variables=session.get("variables"),
@@ -172,8 +180,8 @@ def run(
 
         # 6) Summary (ALWAYS printed in interactive/verbose; printed in non-verbose via echo)
         summary = build_download_summary(session, estimates, speed_mbps)
-        log_msg(summary, logger, echo_console=echo_only_if_no_console_handler(True))
-        log_msg(f"Output base filename: {filename_base}", logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg(msg=summary, logger=logger, echo_console=echo_only_if_no_console_handler(force=True))
+        log_msg(msg=f"Output base filename: {filename_base}", logger=logger, echo_console=echo_only_if_no_console_handler(True))
 
         # 7) Downloads
         successful, failed, skipped = [], [], []
