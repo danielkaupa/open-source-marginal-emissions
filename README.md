@@ -22,10 +22,11 @@ Table of Contents:
 
 
 The codebase is split into four modules that can evolve independently:
-•	weather_data_retrieval/ — packaged Python CLI for ERA5/ERA5-Land retrieval (interactive & batch/HPC). ✅ available now
-•	grid_data_retrieval/ — stubs/placeholders for grid data connectors. 🚧 planned
-•	data_cleaning_and_joining/ — cleaning, de-accumulation, time alignment, memory-efficient storage. 🚧 planned
-•	marginal_emissions_modelling/ — exploratory/production models for marginal emission factors. 🚧 planned
+* weather_data_retrieval/ — packaged Python CLI for ERA5/ERA5-Land retrieval (interactive & batch/HPC). ✅ available now
+* grid_data_retrieval/ — stubs/placeholders for grid data connectors. 🚧 planned
+* data_cleaning_and_joining/ — geospatial & temporal cleaning, de-accumulation, memory-efficient storage. 🚧 planned
+* marginal_emissions_modelling/ — exploratory/production models for marginal emission factors. 🚧 planned
+
 See information/core_concepts_and_definitions copy.md for terminology and conceptual background.
 
 

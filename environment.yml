@@ -59,3 +59,5 @@ dependencies:
       # documentation tools
       - mkdocstrings
       - mkdocs-awesome-pages-plugin
+      - mkdocs-monorepo-plugin
+      - mkdocs-autorefs

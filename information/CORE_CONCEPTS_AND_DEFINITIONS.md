@@ -6,17 +6,15 @@ The purpose of this page is to provide definitions and explanations of key terms
 
 ## Emissions and Emissions Factors
 
-<details>
-<summary><strong>Emission factors</strong></summary>
+??? info "Emission factors"
 
-* **Definition:** "An emission factor gives the relationship between the amount of a pollutant produced and the amount of raw material processed or burnt. For example, for mobile sources, the emission factor is given in terms of the relationship between the amount of a pollutant that is produced and the number of vehicle miles travelled. By using the emission factor of a pollutant and specific data regarding quantities of materials used by a given source, it is possible to compute emissions for the source. This approach is used in preparing an emissions inventory." [DEFRA](https://uk-air.defra.gov.uk/air-pollution/glossary.php?glossary_id=25)
+    **Definition:** "An emission factor gives the relationship between the amount of a pollutant produced and the amount of raw material processed or burnt. For example, for mobile sources, the emission factor is given in terms of the relationship between the amount of a pollutant that is produced and the number of vehicle miles travelled. By using the emission factor of a pollutant and specific data regarding quantities of materials used by a given source, it is possible to compute emissions for the source. This approach is used in preparing an emissions inventory." [DEFRA](https://uk-air.defra.gov.uk/air-pollution/glossary.php?glossary_id=25)
 
 
-* **Definition:** "An emission factor (EF) is a coefficient that describes the rate at which a given activity releases greenhouse gases (GHGs) into the atmosphere. They are also referred to as conversion factors, emission intensity and carbon intensity." [Climatiq](https://www.climatiq.io/docs/guides/understanding/what-is-an-emission-factor)
-<br>
+    **Definition:** "An emission factor (EF) is a coefficient that describes the rate at which a given activity releases greenhouse gases (GHGs) into the atmosphere. They are also referred to as conversion factors, emission intensity and carbon intensity." [Climatiq](https://www.climatiq.io/docs/guides/understanding/what-is-an-emission-factor)
 
-* **Note** This factor can vary on a number of factors including but not limited to the specific technology used, age and condition of a technology, the specific chemical properties of a given type of fuel. To illustrate the affect of the technology, take for example a coal-fired generator that is 30 years old. This generator will probably be less efficient than one that is 5 years old, and require more fuel to produce the same amount of electricity. More coal consumed in this scenario means more carbon and emissions per kWh. There can also be differences within the same category of fuel. For example bituminous coal generally has a higher heat content than [lignite](https://www.eia.gov/energyexplained/coal), and the overall footprint of carbon from natural gas may will vary based on its [source](https://www.eia.gov/energyexplained/natural-gas/) or [mixture](https://www.carbonbrief.org/whats-the-difference-between-natural-gas-liquid-natural-gas-shale-gas-shale-oil-and-methane-an-oil-and-gas-glossary/)
-</details>
+    **Note** This factor can vary on a number of factors including but not limited to the specific technology used, age and condition of a technology, the specific chemical properties of a given type of fuel. To illustrate the affect of the technology, take for example a coal-fired generator that is 30 years old. This generator will probably be less efficient than one that is 5 years old, and require more fuel to produce the same amount of electricity. More coal consumed in this scenario means more carbon and emissions per kWh. There can also be differences within the same category of fuel. For example bituminous coal generally has a higher heat content than [lignite](https://www.eia.gov/energyexplained/coal), and the overall footprint of carbon from natural gas may will vary based on its [source](https://www.eia.gov/energyexplained/natural-gas/) or [mixture](https://www.carbonbrief.org/whats-the-difference-between-natural-gas-liquid-natural-gas-shale-gas-shale-oil-and-methane-an-oil-and-gas-glossary/)
+
 
 <details>
 <summary><strong>Average Emissions </strong></summary>
@@ -46,8 +44,7 @@ The purpose of this page is to provide definitions and explanations of key terms
 <br>
 </details>
 
-<details>
-<summary><strong>When to use Average Emissions & Marginal Emissions</strong></summary>
+??? info<strong>When to use Average Emissions & Marginal Emissions</strong>
 <br>
 
  * Average emissions are useful for understanding the overall impact of a power generation system and for long-term planning and policy-making. They provide a broad view of emissions across all generators in a system.
@@ -55,7 +52,7 @@ The purpose of this page is to provide definitions and explanations of key terms
  * "The scientific consensus is clear: marginal emissions rates are the appropriate metric to use for measuring the consequential impact of load shifting, siting new loads, and building new renewables." [WattTime](https://watttime.org/data-science/data-signals/average-vs-marginal/)
 
 <br>
-</details>
+
 
 ## Energy and the Grid
 
