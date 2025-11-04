@@ -5,17 +5,17 @@ The purpose of this page is to provide definitions and explanations of key terms
 ## Emissions and Emissions Factors
 
 ??? info "Emission factors"
-    **Definitions:**
+    - **Definitions:**
         - "An emission factor gives the relationship between the amount of a pollutant produced and the amount of raw material processed or burnt. For example, for mobile sources, the emission factor is given in terms of the relationship between the amount of a pollutant that is produced and the number of vehicle miles travelled. By using the emission factor of a pollutant and specific data regarding quantities of materials used by a given source, it is possible to compute emissions for the source. This approach is used in preparing an emissions inventory." [DEFRA](https://uk-air.defra.gov.uk/air-pollution/glossary.php?glossary_id=25)
         - "An emission factor (EF) is a coefficient that describes the rate at which a given activity releases greenhouse gases (GHGs) into the atmosphere. They are also referred to as conversion factors, emission intensity and carbon intensity." [Climatiq](https://www.climatiq.io/docs/guides/understanding/what-is-an-emission-factor)
 
-    **Notes:** This factor can vary on a number of factors including but not limited to the specific technology used, age and condition of a technology, the specific chemical properties of a given type of fuel. To illustrate the affect of the technology, take for example a coal-fired generator that is 30 years old. This generator will probably be less efficient than one that is 5 years old, and require more fuel to produce the same amount of electricity. More coal consumed in this scenario means more carbon and emissions per kWh. There can also be differences within the same category of fuel. For example bituminous coal generally has a higher heat content than [lignite](https://www.eia.gov/energyexplained/coal), and the overall footprint of carbon from natural gas may will vary based on its [source](https://www.eia.gov/energyexplained/natural-gas/) or [mixture](https://www.carbonbrief.org/whats-the-difference-between-natural-gas-liquid-natural-gas-shale-gas-shale-oil-and-methane-an-oil-and-gas-glossary/)
+    - **Notes:** This factor can vary on a number of factors including but not limited to the specific technology used, age and condition of a technology, the specific chemical properties of a given type of fuel. To illustrate the affect of the technology, take for example a coal-fired generator that is 30 years old. This generator will probably be less efficient than one that is 5 years old, and require more fuel to produce the same amount of electricity. More coal consumed in this scenario means more carbon and emissions per kWh. There can also be differences within the same category of fuel. For example bituminous coal generally has a higher heat content than [lignite](https://www.eia.gov/energyexplained/coal), and the overall footprint of carbon from natural gas may will vary based on its [source](https://www.eia.gov/energyexplained/natural-gas/) or [mixture](https://www.carbonbrief.org/whats-the-difference-between-natural-gas-liquid-natural-gas-shale-gas-shale-oil-and-methane-an-oil-and-gas-glossary/)
 
 
 ??? info "Average Emissions"
-    **Definition:** The total carbon emissions per amount of electricity produced by all generators in a system. [ADG Efficiency](https://adgefficiency.com/energy-basics-average-vs-marginal-carbon-emissions/)
+    - **Definition:** The total carbon emissions per amount of electricity produced by all generators in a system. [ADG Efficiency](https://adgefficiency.com/energy-basics-average-vs-marginal-carbon-emissions/)
 
-    **Notes:** Average emissions are good for analysing environmental impact in the aggregate - over a year or over a large area. Using average emission factors helps simplify the calculations by providing a single value to represent the emissions from a system that contains a diverse set of power generation sources.
+    - **Notes:** Average emissions are good for analysing environmental impact in the aggregate - over a year or over a large area. Using average emission factors helps simplify the calculations by providing a single value to represent the emissions from a system that contains a diverse set of power generation sources.
 
 
 ??? info "Marginal Emissions"
@@ -107,30 +107,3 @@ The purpose of this page is to provide definitions and explanations of key terms
 
 ??? info "Ordinary Least Squares Regression (OLS)"
     **Definition:** A technique for estimating the coefficients of a linear regression equation by minimizing the sum of the squared differences between the observed and predicted values. [XLSTAT](https://www.xlstat.com/solutions/features/ordinary-least-squares-regression-ols)
-        - Y = β0 + Σj=1..p βjXj + ε
-
-
-## Coding Libraries
-
-??? info "SQLAlchemy"
-
-    - SQLAlchemy is a Python database toolkit - essentially the bridge between Python and SQL databases.
-    It provides a set of high-level API's to interact with databases, allowing you to write Python code that can create, read, update, and delete data in a database.
-
-    - **Core Aspects:**
-        - *create_engine* : This is the core function that creates a new SQLAlchemy engine instance, stores the information needed to connect to the database, and establishes that connection.
-            - It takes a database URL as an argument, which specifies the database dialect (e.g., PostgreSQL), username, password, host, port, and database name.
-            - The URL format is: dialect+driver://username:password@host:port/database
-        - *inspect* : The inspect function is used to create an inspector object, which can be used to get information about the database schema including:
-            - schema names in the database
-            - table names in the schemas
-            - column names and data types for tables
-            - foreign key relationships
-            - This object usually retrieves the information from the information_schema system table, but just wraps the SQL queries into a more user-friendly interface.
-        - *text* : The text function is used to safely wrap SQL strings and create a text object which is then passed and its contained queries executed.
-
-    - Importing SQLAlchemy ORM libraries - the Object Relational Mapper (ORM) is a way to interact with the database using Python objects instead of SQL queries.
-    It automatically maps database tables to Python classes, table columns to class attributes, and table rows to Python objects.
-    It allows you to interact with the database using Python code instead of writing raw SQL queries.
-
-    - [Documentation](https://docs.sqlalchemy.org/en/20/)
