@@ -24,6 +24,7 @@
 
 import calendar
 from datetime import datetime, time, timedelta
+from logging import config
 import tempfile
 from typing import List, Optional, Any
 import cdsapi
@@ -36,23 +37,26 @@ from pathlib import Path
 # ----------------------------------------------
 
 from weather_data_retrieval.utils.logging import log_msg
-
+from osme_common.paths import repo_root, data_dir, config_dir, resolve_under
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
 # ----------------------------------------------
 
-# This file lives at: <project_root>/weather_data_retrieval/utils/data_validation.py
-# parents[0] = .../utils, parents[1] = .../weather_data_retrieval, parents[2] = <project_root>
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# # This file lives at: <project_root>/weather_data_retrieval/utils/data_validation.py
+# # parents[0] = .../utils, parents[1] = .../weather_data_retrieval, parents[2] = <project_root>
+# PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-DATA_DIR = PROJECT_ROOT / "data"
-RAW_DATA_DIR = DATA_DIR / "raw"
-INPUT_DIR = PROJECT_ROOT / "input"
+# DATA_DIR = PROJECT_ROOT / "data"
+# RAW_DATA_DIR = DATA_DIR / "raw"
+# INPUT_DIR = PROJECT_ROOT / "input"
 
-# Public defaults used by the rest of the app
-default_save_dir = RAW_DATA_DIR
-default_input_dir = INPUT_DIR
+# # Public defaults used by the rest of the app
+# default_save_dir = RAW_DATA_DIR
+# default_input_dir = INPUT_DIR
+
+default_save_dir = data_dir(create=True)
+default_input_dir = config_dir(create=True)
 
 # Lists of known "bad" variables for various datasets
 invalid_era5_world_variables = [
@@ -829,7 +833,7 @@ def _validate_common(
         raise ValueError("Invalid dataset short name")
 
     # Save dir
-    p = Path(config["save_dir"]).expanduser()
+    p = resolve_under(data_dir(create=True), config["save_dir"])
     try:
         p.mkdir(parents=True, exist_ok=True)
     except Exception as e:

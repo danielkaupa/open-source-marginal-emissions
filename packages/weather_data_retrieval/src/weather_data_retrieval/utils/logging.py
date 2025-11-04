@@ -35,7 +35,8 @@ from tqdm import tqdm
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
-# N/A
+from osme_common.paths import log_dir, data_dir, resolve_under
+
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -106,31 +107,36 @@ def build_download_summary(session: Any,
 
 
 def setup_logger(
-        save_dir: str,
+        save_dir: str | None = None,
         run_mode: str = "interactive",
         verbose: bool = False
         ) -> logging.Logger:
     """
-    Mode: "interactive" (console + file) or "automatic" (file only)
+    Initialize and return a configured logger.
+
+    Logs are written to <repo_root>/logs (or $OSME_LOG_DIR) by default,
+    with optional console output in interactive or verbose modes.
 
     Parameters
     ----------
-    save_dir : str
-        Directory to save log files.
+    save_dir : str or None, optional
+        Directory to save log files. If None, defaults to osme_common.paths.log_dir().
     run_mode : str, optional
-        Run mode, either 'interactive' or 'automatic', by default "interactive".
+        Either 'interactive' or 'automatic', by default 'interactive'.
     verbose : bool, optional
-        Whether to also echo log messages to console in automatic mode, by default True.
+        Whether to echo logs to console in automatic mode, by default False.
 
     Returns
     -------
     logging.Logger
         Configured logger instance.
-
     """
-    Path(save_dir).mkdir(parents=True, exist_ok=True)
+    # --- Resolve log directory ---
+    base_dir = Path(save_dir) if save_dir else log_dir(create=True)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_path = Path(save_dir) / f"run_{run_mode}_{timestamp}.log"
+    log_path = base_dir / f"run_{run_mode}_{timestamp}.log"
 
     logger = logging.getLogger("weather_retrieval")
     # Make sure logger captures everything; handlers will filter
@@ -215,8 +221,6 @@ def create_final_log_file(
     ----------
     session : Any (SessionState)
         Current session state.
-    save_dir : str
-        Directory to save the final log file.
     filename_base : str
         Base filename pattern (same as data files).
     original_logger : logging.Logger
@@ -245,10 +249,13 @@ def create_final_log_file(
     original_path = Path(fh.baseFilename)
 
     # 2) build final path
-    save_dir = Path(str(session.get("save_dir")))
+    save_dir_raw = session.get("save_dir")
+    save_dir = resolve_under(data_dir(create=True), save_dir_raw) if save_dir_raw else data_dir(create=True)
+
     start = session.get("start_date")
     end = session.get("end_date")
     retrieved = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+
     final_name = f"{filename_base}_{start}-{end}_retrieved-{retrieved}.log"
     final_path = save_dir / final_name
     final_path.parent.mkdir(parents=True, exist_ok=True)

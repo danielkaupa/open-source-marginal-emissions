@@ -25,12 +25,13 @@
 import json
 import os
 from weather_data_retrieval.utils.data_validation import validate_config
+from pathlib import Path
 
 # ----------------------------------------------
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
-# N/A
+from osme_common.paths import config_dir, resolve_under
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -66,7 +67,8 @@ def load_and_validate_config(
     dict
         Validated configuration dictionary.
     """
-    with open(path, "r", encoding="utf-8") as f:
+    cfg_path = _resolve_config_path(path)
+    with open(cfg_path, "r", encoding="utf-8") as f:
         config = json.load(f)
     # Let validate_config perform normalization/clamping with logging context
     validate_config(config, logger=logger, run_mode=run_mode)
@@ -87,7 +89,33 @@ def load_config(file_path: str) -> dict:
     dict
         Configuration dictionary.
     """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Configuration file not found: {file_path}")
-    with open(file_path, "r", encoding="utf-8") as f:
+    # if not os.path.exists(file_path):
+    #     raise FileNotFoundError(f"Configuration file not found: {file_path}")
+    # with open(file_path, "r", encoding="utf-8") as f:
+    #     return json.load(f)
+    cfg_path = _resolve_config_path(file_path)
+    with open(cfg_path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _resolve_config_path(path: str | Path) -> Path:
+    """
+    Resolve a config path safely relative to osme_common.config_dir().
+
+    Parameters
+    ----------
+    path : str | Path
+        The path or filename to resolve.
+
+    Returns
+    -------
+    Path
+        Fully resolved path to the configuration file.
+    """
+    p = Path(path)
+    if p.is_absolute() and p.exists():
+        return p
+    resolved = resolve_under(config_dir(create=True), p)
+    if not resolved.exists():
+        raise FileNotFoundError(f"Configuration file not found: {resolved}")
+    return resolved

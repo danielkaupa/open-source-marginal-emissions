@@ -51,7 +51,9 @@ from weather_data_retrieval.utils.data_validation import (
     invalid_era5_land_variables,
     # invalid_open_meteo_variables
 )
+from osme_common.paths import data_dir, resolve_under
 from weather_data_retrieval.utils.logging import log_msg
+
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -175,13 +177,20 @@ def run_prompt_wizard(
             raise NotImplementedError("Open-Meteo variable validation not yet implemented.")
 
         if key == "save_dir":
-            save_path = prompt_save_directory(session, default_save_dir, logger=logger)
-            if save_path in ("__EXIT__", "__BACK__"):
-                if save_path == "__BACK__":
+            raw_save_path = prompt_save_directory(session, default_save_dir, logger=logger)
+            if raw_save_path in ("__EXIT__", "__BACK__"):
+                if raw_save_path == "__BACK__":
                     session.unset("session_client")
                     session.unset("api_key")
                     continue
                 return False
+
+            # Normalize and resolve path safely
+            resolved_path = resolve_under(data_dir(create=True), raw_save_path)
+            session.set("save_dir", str(resolved_path))
+            log_msg(f"Save directory resolved to: {resolved_path}", logger)
+            continue
+
 
         elif key == "start_date":
             # This prompt sets BOTH start_date and end_date

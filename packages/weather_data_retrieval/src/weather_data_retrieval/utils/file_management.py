@@ -33,7 +33,7 @@ import math
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
-# N/A
+from osme_common.paths import data_dir, resolve_under
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -312,16 +312,31 @@ def estimate_cds_download(
         "total_time_sec": round(total_time_sec, 1),
     }
 
+def expected_save_path(
+        save_dir: str | Path | None,
+        filename_base: str,
+        year: int,
+        month: int,
+        data_format: str = "grib"
+        ) -> Path:
+    """
+    Construct canonical save path for monthly data.
 
-# def expected_save_path(
-#         save_dir: Path,
-#         filename_base: str,
-#         year: int,
-#         month: int,
-#         data_format: str = "grib"
-#         ) -> Path:
-#     """
-#     Single source of truth for how monthly files are named & where they live.
-#     Format: {filename_base}_{YYYY}-{MM}.{ext}
-#     """
-#     return Path(save_dir) / f"{filename_base}_{year:04d}-{month:02d}.{data_format}"
+    Parameters
+    ----------
+    save_dir : str | Path | None
+        Base directory for saving. If None, defaults to osme_common.paths.data_dir().
+    filename_base : str
+        Base name without date or extension.
+    year, month : int
+        Year and month of the file.
+    data_format : str
+        File extension, e.g., 'grib' or 'nc'.
+
+    Returns
+    -------
+    Path
+        Resolved path under the proper data directory.
+    """
+    base = resolve_under(data_dir(create=True), save_dir)
+    return base / f"{filename_base}_{year:04d}-{month:02d}.{data_format}"

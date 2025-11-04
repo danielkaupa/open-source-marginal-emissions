@@ -257,32 +257,3 @@ def run_batch_from_config(
     """
     config = load_config(cfg_path)
     return run(config, run_mode="automatic", verbose=False, logger=logger)
-
-
-# def run_interactive(logger=None) -> int:
-#     """
-#     Run interactive prompt wizard and then execute downloads.
-
-#     Parameters
-#     ----------
-#     logger : logging.Logger, optional
-#         Pre-configured logger instance, by default None.
-#     Returns
-#     -------
-#     int
-#         Exit code: 0=success, 1=fatal error, 2=some downloads failed.
-#     """
-#     session = SessionState()
-
-#     completed = run_prompt_wizard(session, logger=logger)
-
-#     if not completed:
-#         if logger:
-#             log_msg("Wizard cancelled.", logger, echo_console=True)
-#         else:
-#             print("Wizard cancelled.")
-#         return 1
-
-#     config = session.to_dict()
-
-#     return run(config, verbose=True, logger=logger)
