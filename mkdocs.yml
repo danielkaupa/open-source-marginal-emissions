@@ -1,6 +1,6 @@
 # repo-root/mkdocs.yml
 site_name: Open Source Marginal Emissions — Docs
-site_url: https://YOUR_GH_PAGES_URL_HERE
+site_url: https://danielkaupa.github.io/open-source-marginal-emissions/
 repo_url: https://github.com/danielkaupa/open-source-marginal-emissions
 repo_name: danielkaupa/open-source-marginal-emissions
 # strict: true
