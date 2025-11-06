@@ -99,11 +99,11 @@ The top-level modules are packaged for long-term maintainability and distributed
 ### Documentation
 Documentation for this project is available [here](https://danielkaupa.github.io/open-source-marginal-emissions/), and contains information on each of the modules, including installation and usage instructions.
 
-**Project Roadmap**: The documentation also contains a [roadmap](https://danielkaupa.github.io/open-source-marginal-emissions/project-roadmap/) outlining planned features and improvements for the framework.
+**Project Roadmap**: The documentation also contains a [roadmap](https://danielkaupa.github.io/open-source-marginal-emissions/PROJECT_ROADMAP/) outlining planned features and improvements for the framework.
 
 ### Acknowledgements
 This work extends an MSc thesis at Imperial College London and benefited from support by collaborators and mentors. See
-[ACKNOWLEDGEMENTS](./information/ACKNOWLEDGEMENTS.md) or https://danielkaupa.github.io/open-source-marginal-emissions/acknowledgements/
+[ACKNOWLEDGEMENTS](./information/ACKNOWLEDGEMENTS.md) or https://danielkaupa.github.io/open-source-marginal-emissions/ACKNOWLEDGEMENTS/
 
 
 ### License
