@@ -9,11 +9,11 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 
 **Goal:** Automated retrieval of weather datasets from APIs including ERA5 from the [Copernicus Climate Data Store](https://cds.climate.copernicus.eu/) and [Open-Meteo](https://open-meteo.com/).
 
-#### MVP Deliverable:
+#### MVP Deliverable
 * Reproducible retrieval of ERA5-world and ERA5-land data from the Copernicus CDS API for user-defined regions and date ranges.
 * Allows for both interactive CLI and batch JSON config usage.
 
-#### Future Development:
+#### Future Development
 * Implement Open-Meteo data retrieval.
 * Increase robustness of dataset validation for variable availability.
 * Implement functionality that allows users to view the data variables available for their selected dataset prior to selection for download.
@@ -27,12 +27,12 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 
 **Goal:** Automated retrieval of electricity grid datasets from APIs including [Electricity Maps](https://portal.electricitymaps.com/data-explorer/overview), [International Energy Agency](https://www.iea.org/data-and-statistics/data-tools/real-time-electricity-tracker), and country-specific sources such as [CarbonTracker India](https://carbontracker.in/).
 
-#### MVP Deliverable:
+#### MVP Deliverable
 * Reproducible retrieval of electricity grid data from carbontracker.in for user-defined date ranges.
 * Allows for both interactive CLI and batch JSON config usage.
 * Attempt to use existing library for CLI (different strategy from weather_data_retrieval)
 
-#### Future Development:
+#### Future Development
 * Implement Electricity Maps data retrieval.
 * Implement IEA data retrieval.
 * Implement country-specific data retrieval for additional countries beyond India.
@@ -55,13 +55,13 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 * Aggregating or disaggregating grid data to common temporal frequencies.
 * Joining weather and grid datasets on common axes (time, region).
 
-#### MVP Deliverable:
+#### MVP Deliverable
 * Process weather and grid data to export analysis-ready tables at 30-minutely frequency.
     * Includes gap filling, aligning of geospatial/temporal axes, de-accumulation of weather data, and aggregation/disaggregation of grid data.
 * Include national average of weather data as well as data at native resolution.
 * (Trim data to national boundaries - India)
 
-#### Future Development:
+#### Future Development
 * Select and trim data to national boundaries
 * Allow for configurable temporal frequencies (60, 120 first - maybe 15 as final)
 * Allow for configurable geospatial resolutions (regrid to coarser (aggregate) or finer (disaggregate) grids)
@@ -75,7 +75,7 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 
 **Goal:** Allow users to develop a model for marginal emissions factors using the weather and grid data available
 
-#### MVP Deliverable:
+#### MVP Deliverable
 * Notebook style development with one for EDA and one for generating models
 * Template for how to sift through data, transformations, models, and evaluation of accuracy
 * Expected end results and format: datetime, MEF, AEF
@@ -109,7 +109,7 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 
 **Goal:** Automated retrieval of open-source residential electricity consumption datasets from APIs. Potential sources include [Energy Dashboard UK](https://www.energydashboard.co.uk/live) and country-specific sources.
 
-#### MVP Deliverable:
+#### MVP Deliverable
 * Reproducible retrieval of residential electricity consumption data from any open-source API.
 
 #### Future Development
@@ -123,7 +123,7 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 
 **Goal:** Module for running optimisation processes that determine the most efficient scheduling or allocation of electricity demand, based on marginal emissions and operational constraints.
 
-#### MVP Deliverable:
+#### MVP Deliverable
 * Module that performs optimisation for a predefined set of constraints and time periods (e.g., weekly or monthly).
 * Accepts and validates all required inputs (constraints, data sources, solver selection).
 * Produces a reproducible output containing the optimised schedule or decision variables, as well as summary statistics and diagnostics.
@@ -162,14 +162,14 @@ It summarises the plan for extending the [MSc thesis](https://github.com/danielk
 #### 1. User Journey & Orchestration (osme-orchestrator)
 This is a new, high-level package that guides users through the platform's capabilities, acting as the main entry point.
 
-##### MVP Deliverable:
+##### MVP Deliverable
 * A Command-Line Interface (CLI) wizard that interactively guides the user through the primary use cases:
     * "I want to download data." -> Guides user through weather_data_retrieval and grid_data_retrieval configuration.
     * "I have data and want to build a Marginal Emissions model." -> Guides user through data_cleaning_and_joining and then into the marginal_emissions_modelling notebook templates.
     * "I have a model and data, and I want to run an optimisation." -> Guides user through the optimisation module setup.
 * The wizard generates the necessary JSON configuration files for batch execution in other modules.
 
-##### Future Development:
+##### Future Development
 * Web-based UI: A simple Streamlit or Dash application that provides the same guided experience as the CLI wizard, with forms for data selection, model parameters, and optimisation constraints.
 * "Recipe" System: Pre-defined, end-to-end JSON configurations for common scenarios (e.g., "India 2023 MEF Model," "UK Demand Shifting Optimisation").
 * Project Scaffolding: Automatically creates a well-structured project directory with data/raw, data/processed, models/, config/ folders.
@@ -177,13 +177,13 @@ This is a new, high-level package that guides users through the platform's capab
 #### 2. Shared Infrastructure & Core Utilities (osme-core)
 This package contains the shared code that all other modules depend on.
 
-##### MVP Deliverable:
+##### MVP Deliverable
 * Unified Configuration Management: A single, validated JSON schema for all module configurations. Handles credentials (via environment variables or a secure vault), data directories, and execution parameters.
 * Standardized Logging: A common logging format and lifecycle (info, debug, warning, error) across all modules, with structured logging for easy parsing.
 * Common Data Types & Models: Pydantic models or Python dataclasses for core concepts like TemporalRange, GeographicalRegion, DataSource.
 * Base Classes for Retrieval: Abstract base classes that define the interface for any data retrieval module, ensuring consistency.
 
-##### Future Development:
+##### Future Development
 * Plugin Architecture: A formal system for adding new data providers, solvers, or gap-filling methods without modifying the core code.
 * Health & Performance Monitoring: Utilities for tracking memory usage, runtime, and data validation metrics across modules.
 * Serialization Utilities: Standardized methods for saving/loading models, optimisation results, and large datasets (e.g., using joblib or Apache Parquet).
@@ -191,10 +191,10 @@ This package contains the shared code that all other modules depend on.
 #### 3. Execution & Compute Layer (osme-compute)
 This component abstracts the computational environment, enabling both local development and scalable cloud/HPC execution.
 
-##### MVP Deliverable:
+##### MVP Deliverable
 * Local Execution Engine: The default mode, running all processes on the user's local machine. Includes the resource estimation warnings mentioned in the optimisation roadmap.
 
-##### Future Development:
+##### Future Development
 * Workflow Orchestration: Integration with workflow engines like Prefect or Dagster to define the entire data pipeline (retrieve -> clean -> model -> optimise) as a single, monitored, and re-runnable DAG (Directed Acyclic Graph).
 
 * Cloud & HPC Abstraction:

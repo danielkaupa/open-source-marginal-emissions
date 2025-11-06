@@ -2,7 +2,7 @@
 site_name: OSME - Weather Data Retrieval- Documentation
 
 nav:
-  - Home: index.md
+  - Overview: index.md
   - Quickstart: quickstart.md
   - Codebase: codebase.md
 # site_description: Retrieve ERA5‑Land and ERA5 weather data, interactively or via JSON config, with validation, logging, retries, and HPC‑friendly scripts.

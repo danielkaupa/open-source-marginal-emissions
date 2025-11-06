@@ -1,6 +1,8 @@
 # osme_common mkdocs.yml
 site_name: OSME - Common Utilities - Documentation
-docs_dir: .
+docs_dir: docs
 
 nav:
-  - Overview: README.md
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Codebase: codebase.md
