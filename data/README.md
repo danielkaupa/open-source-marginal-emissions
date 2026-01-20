@@ -1,0 +1,1 @@
+This folder is kept intentionally empty as data files should be stored locally. But the structure is maintainted for consistency with the project layout, documentation, and code that makes reference to this directory.
