@@ -103,11 +103,11 @@ Documentation for this project is available [here](https://danielkaupa.github.io
 
 ### Acknowledgements
 This work extends an MSc thesis at Imperial College London and benefited from support by collaborators and mentors. See
-[ACKNOWLEDGEMENTS](./information/ACKNOWLEDGEMENTS.md) or https://danielkaupa.github.io/open-source-marginal-emissions/ACKNOWLEDGEMENTS/
+[ACKNOWLEDGEMENTS](https://danielkaupa.github.io/open-source-marginal-emissions/information/ACKNOWLEDGEMENTS.md) or https://danielkaupa.github.io/open-source-marginal-emissions/information/ACKNOWLEDGEMENTS/
 
 
 ### License
-This project is released under the terms in [LICENSE](./LICENSE).
+This project is released under the terms in [LICENSE](https://danielkaupa.github.io/open-source-marginal-emissions/LICENSE).
 > **License:** AGPL-3.0-or-later **OR** Commercial License
 > For commercial use without AGPL obligations, email **daniel.kaupa@outlook.com**
-> See [COMMERCIAL-TERMS](./COMMERCIAL-TERMS.md) and [LICENSE](./LICENSE).
+> See [COMMERCIAL-TERMS](https://danielkaupa.github.io/open-source-marginal-emissions/COMMERCIAL-TERMS.md) and [LICENSE](https://danielkaupa.github.io/open-source-marginal-emissions/LICENSE).

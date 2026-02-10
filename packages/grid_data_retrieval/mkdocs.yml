@@ -1,7 +1,6 @@
 # grid_data_retrieval mkdocs.yml
 site_name: OSME - Grid Data Retrieval - Documentation
-#docs_dir: docs
-
+# docs_dir: docs
 nav:
   - Overview: index.md
   - Quickstart: quickstart.md
