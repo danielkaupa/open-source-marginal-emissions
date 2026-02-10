@@ -1,0 +1,2655 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://danielkaupa.github.io/open-source-marginal-emissions/osme-weather-data-retrieval-documentation/user-guide/">
+      
+      
+        <link rel="prev" href="../quickstart/">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.23">
+    
+    
+      
+        <title>User Guide - Open Source Marginal Emissions — Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#user-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Open Source Marginal Emissions — Docs" class="md-header__button md-logo" aria-label="Open Source Marginal Emissions — Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Open Source Marginal Emissions — Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              User Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/danielkaupa/open-source-marginal-emissions" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    danielkaupa/open-source-marginal-emissions
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Overview
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Packages
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Open Source Marginal Emissions — Docs" class="md-nav__button md-logo" aria-label="Open Source Marginal Emissions — Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Open Source Marginal Emissions — Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/danielkaupa/open-source-marginal-emissions" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    danielkaupa/open-source-marginal-emissions
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Overview
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction to this Repository
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CORE_CONCEPTS_AND_DEFINITIONS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Core Concepts and Definitions
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PROJECT_ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ACKNOWLEDGEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Acknowledgements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Packages
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Packages
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Weather Data Retrieval
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            Weather Data Retrieval
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interactive-mode-deep-dive" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interactive Mode Deep Dive
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interactive Mode Deep Dive">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-interactive-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Starting Interactive Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#navigation-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Navigation Commands
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quiet-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quiet Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understanding-the-wizard-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understanding the Wizard Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smart-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Smart Validation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batchautomatic-mode-deep-dive" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch/Automatic Mode Deep Dive
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch/Automatic Mode Deep Dive">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verbose-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verbose Output
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-file-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Config File Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-file-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Config File Locations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managing-api-keys-in-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managing API Keys in Configs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Managing API Keys in Configs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-placeholder-manual-edit-simple" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 1: Placeholder + Manual Edit (Simple)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-separate-credentials-file-better" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 2: Separate Credentials File (Better)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-3-environment-variables-best-for-cicd" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option 3: Environment Variables (Best for CI/CD)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-specific-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provider-Specific Details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider-Specific Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cds-copernicus-climate-data-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      CDS (Copernicus Climate Data Store)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CDS (Copernicus Climate Data Store)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#getting-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting Access
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-rate-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Rate Limits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Datasets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variable-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variable Names
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-meteo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open-Meteo
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#output-directory-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Directory Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filename-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filename Convention
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existing-file-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Existing File Handling
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Existing File Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skip_all-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      skip_all (Recommended)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overwrite" class="md-nav__link">
+    <span class="md-ellipsis">
+      overwrite
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prompt-interactive-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      prompt (Interactive Only)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Validation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#download-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download Settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Download Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parallel-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parallel Downloads
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parallel Downloads">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choosing-max_concurrent" class="md-nav__link">
+    <span class="md-ellipsis">
+      Choosing max_concurrent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#efficiency-factor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Efficiency Factor
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retry-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Retry Settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Retry Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-retries-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Retries Work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-failure-reasons" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Failure Reasons
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommended-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recommended Settings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speed-estimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Speed Estimation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#log-file-locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log File Locations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-file-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log File Naming
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whats-logged" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Logged
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Log Levels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-log-excerpt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Log Excerpt
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hpc-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      HPC Workflows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HPC Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-the-provided-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the Provided Scripts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-slurm-submission" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example SLURM Submission
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hpc-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      HPC Best Practices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-long-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Monitoring Long Jobs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Patterns
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-region-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Region Downloads
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-year-pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Year Pipelines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resuming-failed-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resuming Failed Downloads
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Configurations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Workflows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-1-exploratory-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflow 1: Exploratory Research
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-2-production-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflow 2: Production Pipeline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-3-multi-country-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflow 3: Multi-Country Comparison
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips-tricks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips &amp; Tricks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tips &amp; Tricks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#speed-up-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Speed Up Downloads
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save-disk-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      💾 Save Disk Space
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔧 Troubleshooting Downloads
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#organizing-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      📋 Organizing Configs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sharing-configs-with-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔄 Sharing Configs with Team
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Next?
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../codebase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Codebase
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Grid Data Retrieval
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Grid Data Retrieval
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-grid-data-retrieval-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-grid-data-retrieval-documentation/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-grid-data-retrieval-documentation/codebase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Codebase
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Data Cleaning and Joining
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Data Cleaning and Joining
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-data-cleaning-and-joining-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-data-cleaning-and-joining-documentation/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-data-cleaning-and-joining-documentation/codebase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Codebase
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Marginal Emissions Modelling
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Marginal Emissions Modelling
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-marginal-emissions-modelling-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-marginal-emissions-modelling-documentation/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-marginal-emissions-modelling-documentation/codebase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Codebase
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Shared utilities
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            Shared utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-common-utilities-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-common-utilities-documentation/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-common-utilities-documentation/codebase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Codebase
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="user-guide">User Guide<a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h1>
+<p>This guide covers everything you need to know about using the weather data retrieval package effectively, from basic concepts to advanced workflows.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The <code>weather_data_retrieval</code> package is designed to handle two main workflows:</p>
+<ol>
+<li><strong>Interactive Mode</strong>: Step-by-step wizard for exploring options and one-off downloads</li>
+<li><strong>Batch/Automatic Mode</strong>: JSON configuration files for reproducible, automated downloads</li>
+</ol>
+<p>Both modes use the same underlying download engine and produce identical outputs.</p>
+<hr />
+<h2 id="interactive-mode-deep-dive">Interactive Mode Deep Dive<a class="headerlink" href="#interactive-mode-deep-dive" title="Permanent link">&para;</a></h2>
+<p>Interactive mode is perfect when you're:</p>
+<ul>
+<li>Exploring available datasets and variables</li>
+<li>Not sure exactly what parameters you need</li>
+<li>Doing a one-time download for analysis</li>
+<li>Learning how the tool works</li>
+</ul>
+<h3 id="starting-interactive-mode">Starting Interactive Mode<a class="headerlink" href="#starting-interactive-mode" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>osme-weather
+</code></pre></div>
+<p>Or with the shorter alias:</p>
+<div class="highlight"><pre><span></span><code>wdr
+</code></pre></div>
+<h3 id="navigation-commands">Navigation Commands<a class="headerlink" href="#navigation-commands" title="Permanent link">&para;</a></h3>
+<p>At any prompt, you can use:</p>
+<ul>
+<li><strong><code>back</code></strong> – Return to the previous question (your answers are preserved)</li>
+<li><strong><code>exit</code></strong> – Quit the wizard (your progress is not saved)</li>
+<li><strong><code>Ctrl+C</code></strong> – Immediately stop the program</li>
+</ul>
+<h3 id="quiet-mode">Quiet Mode<a class="headerlink" href="#quiet-mode" title="Permanent link">&para;</a></h3>
+<p>If you want minimal console output (only errors and critical messages):</p>
+<div class="highlight"><pre><span></span><code>osme-weather<span class="w"> </span>--quiet
+</code></pre></div>
+<p>Logs are still written to files; you just won't see the prompt flow in your terminal.</p>
+<h3 id="understanding-the-wizard-flow">Understanding the Wizard Flow<a class="headerlink" href="#understanding-the-wizard-flow" title="Permanent link">&para;</a></h3>
+<p>The interactive wizard follows this sequence:</p>
+<ol>
+<li><strong>Data Provider</strong> (CDS or Open-Meteo - <em>Open-Meteo coming soon</em>)</li>
+<li><strong>Dataset</strong> (ERA5-Land or ERA5)</li>
+<li><strong>Authentication</strong> (API URL and key)</li>
+<li><strong>Date Range</strong> (start and end dates)</li>
+<li><strong>Geographic Region</strong> (bounding box coordinates)</li>
+<li><strong>Variables</strong> (which weather parameters to download)</li>
+<li><strong>File Handling</strong> (what to do with existing files)</li>
+<li><strong>Parallel Settings</strong> (concurrent downloads)</li>
+<li><strong>Retry Settings</strong> (how to handle failures)</li>
+<li><strong>Confirmation</strong> (review and approve)</li>
+</ol>
+<p>You can navigate backwards through any of these steps if you need to change something.</p>
+<h3 id="smart-validation">Smart Validation<a class="headerlink" href="#smart-validation" title="Permanent link">&para;</a></h3>
+<p>The wizard validates your inputs in real-time:</p>
+<ul>
+<li><strong>Dates</strong>: Must be valid and end ≥ start</li>
+<li><strong>Coordinates</strong>: Must be within valid ranges (-90 to 90 for lat, -180 to 180 for lon)</li>
+<li><strong>Variables</strong>: Checked against dataset-specific availability</li>
+<li><strong>API Key</strong>: Tested with CDS to ensure it works before proceeding</li>
+</ul>
+<p>If something is invalid, you'll get a clear error message and chance to re-enter.</p>
+<hr />
+<h2 id="batchautomatic-mode-deep-dive">Batch/Automatic Mode Deep Dive<a class="headerlink" href="#batchautomatic-mode-deep-dive" title="Permanent link">&para;</a></h2>
+<p>Batch mode is essential for:</p>
+<ul>
+<li><strong>Reproducibility</strong>: The same config always produces the same download</li>
+<li><strong>Automation</strong>: Integrate into larger data pipelines</li>
+<li><strong>Version Control</strong>: Track exactly what data you downloaded (minus the API key)</li>
+<li><strong>HPC Workflows</strong>: Submit jobs without interactive prompts</li>
+<li><strong>Team Collaboration</strong>: Share standardized configs across researchers</li>
+</ul>
+<h3 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>osme-weather<span class="w"> </span>--config<span class="w"> </span>path/to/config.json
+</code></pre></div>
+<h3 id="verbose-output">Verbose Output<a class="headerlink" href="#verbose-output" title="Permanent link">&para;</a></h3>
+<p>By default, batch mode only writes to log files. To see progress in your terminal:</p>
+<div class="highlight"><pre><span></span><code>osme-weather<span class="w"> </span>--config<span class="w"> </span>path/to/config.json<span class="w"> </span>--verbose
+</code></pre></div>
+<p>This shows the same output you'd see in interactive mode, but without requiring any input.</p>
+<h3 id="config-file-structure">Config File Structure<a class="headerlink" href="#config-file-structure" title="Permanent link">&para;</a></h3>
+<p>Here's a complete, annotated example:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data_provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cds&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dataset_short_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;era5-land&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://cds.climate.copernicus.eu/api&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;12345:abcdef123456789&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-01-01&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;region_bounds&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">40.0</span><span class="p">,</span><span class="w"> </span><span class="mf">-10.0</span><span class="p">,</span><span class="w"> </span><span class="mf">35.0</span><span class="p">,</span><span class="w"> </span><span class="mf">5.0</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;variables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;2m_temperature&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;10m_u_component_of_wind&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;10m_v_component_of_wind&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;surface_pressure&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;total_precipitation&quot;</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;existing_file_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;skip_all&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retry_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;max_retries&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;retry_delay_sec&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;parallel_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;max_concurrent&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>See the <a href="../configuration/">Configuration Reference</a> for detailed documentation of every field.</p>
+<h3 id="config-file-locations">Config File Locations<a class="headerlink" href="#config-file-locations" title="Permanent link">&para;</a></h3>
+<p>The tool looks for config files in this order:</p>
+<ol>
+<li><strong>Absolute paths</strong>: <code>/home/user/configs/download.json</code></li>
+<li><strong>Relative to config directory</strong>: <code>configs/weather/download.json</code><br />
+   (resolved to <code>&lt;repo_root&gt;/configs/weather/download.json</code>)</li>
+<li><strong>Relative to current directory</strong>: <code>./my_config.json</code></li>
+</ol>
+<p>We recommend keeping configs in the repository's <code>configs/weather/</code> directory for organization.</p>
+<h3 id="managing-api-keys-in-configs">Managing API Keys in Configs<a class="headerlink" href="#managing-api-keys-in-configs" title="Permanent link">&para;</a></h3>
+<p><strong>Never commit API keys to version control!</strong> Here are three safe approaches:</p>
+<h4 id="option-1-placeholder-manual-edit-simple">Option 1: Placeholder + Manual Edit (Simple)<a class="headerlink" href="#option-1-placeholder-manual-edit-simple" title="Permanent link">&para;</a></h4>
+<p>In your committed config:
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YOUR_API_KEY_HERE&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>Before running, edit to add your real key (but don't commit the change).</p>
+<h4 id="option-2-separate-credentials-file-better">Option 2: Separate Credentials File (Better)<a class="headerlink" href="#option-2-separate-credentials-file-better" title="Permanent link">&para;</a></h4>
+<p><code>download_config.json</code> (committed to repo):
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data_provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cds&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dataset_short_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;era5-land&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://cds.climate.copernicus.eu/api&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PLACEHOLDER&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><code>.env</code> or <code>credentials.json</code> (in <code>.gitignore</code>):
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;CDS_API_KEY&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;12345:abcdef123456789&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>Then merge them in a script before running (future feature).</p>
+<h4 id="option-3-environment-variables-best-for-cicd">Option 3: Environment Variables (Best for CI/CD)<a class="headerlink" href="#option-3-environment-variables-best-for-cicd" title="Permanent link">&para;</a></h4>
+<p>Set in your shell:
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">CDS_API_KEY</span><span class="o">=</span><span class="s2">&quot;12345:abcdef123456789&quot;</span>
+</code></pre></div></p>
+<p>Then reference in config (future feature):
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${CDS_API_KEY}&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<div class="admonition note">
+<p class="admonition-title">Current Limitation</p>
+<p>Environment variable substitution is not yet implemented. For now, use Option 1 or 2.</p>
+</div>
+<hr />
+<h2 id="provider-specific-details">Provider-Specific Details<a class="headerlink" href="#provider-specific-details" title="Permanent link">&para;</a></h2>
+<h3 id="cds-copernicus-climate-data-store">CDS (Copernicus Climate Data Store)<a class="headerlink" href="#cds-copernicus-climate-data-store" title="Permanent link">&para;</a></h3>
+<p>Currently, the only supported provider. Provides access to ERA5 and ERA5-Land datasets.</p>
+<h4 id="getting-access">Getting Access<a class="headerlink" href="#getting-access" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Register at <a href="https://cds.climate.copernicus.eu">https://cds.climate.copernicus.eu</a></li>
+<li>Accept terms for the datasets you want (ERA5, ERA5-Land)</li>
+<li>Get your API key from your profile page</li>
+</ol>
+<h4 id="api-rate-limits">API Rate Limits<a class="headerlink" href="#api-rate-limits" title="Permanent link">&para;</a></h4>
+<p>The CDS API has request limits:</p>
+<ul>
+<li><strong>Max concurrent requests</strong>: 4 (per user account)</li>
+<li><strong>Request queue</strong>: If the system is busy, requests wait in a queue</li>
+<li><strong>Throttling</strong>: Large requests may be slowed or delayed during peak hours</li>
+</ul>
+<p>The tool handles these automatically with retries and backoff.</p>
+<h4 id="available-datasets">Available Datasets<a class="headerlink" href="#available-datasets" title="Permanent link">&para;</a></h4>
+<p><strong>ERA5</strong> (<code>era5-world</code>)
+- <strong>Resolution</strong>: 0.25° (~27 km at equator)
+- <strong>Coverage</strong>: Global (land and ocean)
+- <strong>Frequency</strong>: Hourly
+- <strong>Variables</strong>: 100+ atmospheric, ocean, and land variables
+- <strong>Good for</strong>: Global analyses, ocean regions, coarse-resolution studies</p>
+<p><strong>ERA5-Land</strong> (<code>era5-land</code>)
+- <strong>Resolution</strong>: 0.1° (~11 km at equator)
+- <strong>Coverage</strong>: Land surfaces only
+- <strong>Frequency</strong>: Hourly
+- <strong>Variables</strong>: 50+ land surface variables
+- <strong>Good for</strong>: Regional studies, high-resolution land analysis, hydrology</p>
+<h4 id="variable-names">Variable Names<a class="headerlink" href="#variable-names" title="Permanent link">&para;</a></h4>
+<p>Variable names must exactly match the CDS dataset specifications (case-sensitive).</p>
+<p>Common variables:</p>
+<table>
+<thead>
+<tr>
+<th>Variable Name</th>
+<th>Description</th>
+<th>Units</th>
+<th>Datasets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>2m_temperature</code></td>
+<td>Temperature at 2m above surface</td>
+<td>K</td>
+<td>Both</td>
+</tr>
+<tr>
+<td><code>total_precipitation</code></td>
+<td>Accumulated precipitation</td>
+<td>m</td>
+<td>Both</td>
+</tr>
+<tr>
+<td><code>10m_u_component_of_wind</code></td>
+<td>Eastward wind at 10m</td>
+<td>m/s</td>
+<td>Both</td>
+</tr>
+<tr>
+<td><code>10m_v_component_of_wind</code></td>
+<td>Northward wind at 10m</td>
+<td>m/s</td>
+<td>Both</td>
+</tr>
+<tr>
+<td><code>surface_pressure</code></td>
+<td>Pressure at surface</td>
+<td>Pa</td>
+<td>Both</td>
+</tr>
+<tr>
+<td><code>surface_solar_radiation_downwards</code></td>
+<td>Incoming solar radiation</td>
+<td>J/m²</td>
+<td>Both</td>
+</tr>
+<tr>
+<td><code>soil_temperature_level_1</code></td>
+<td>Top layer soil temperature</td>
+<td>K</td>
+<td>ERA5-Land</td>
+</tr>
+<tr>
+<td><code>snow_depth</code></td>
+<td>Snow depth</td>
+<td>m</td>
+<td>ERA5-Land</td>
+</tr>
+</tbody>
+</table>
+<p>For the complete list, see:
+- <a href="https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels">ERA5 variables</a>
+- <a href="https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land">ERA5-Land variables</a></p>
+<h3 id="open-meteo">Open-Meteo<a class="headerlink" href="#open-meteo" title="Permanent link">&para;</a></h3>
+<div class="admonition info">
+<p class="admonition-title">Coming Soon</p>
+<p>Open-Meteo integration is planned but not yet available. Check the <a href="../../PROJECT_ROADMAP/">project roadmap</a> for updates.</p>
+</div>
+<hr />
+<h2 id="file-management">File Management<a class="headerlink" href="#file-management" title="Permanent link">&para;</a></h2>
+<h3 id="output-directory-structure">Output Directory Structure<a class="headerlink" href="#output-directory-structure" title="Permanent link">&para;</a></h3>
+<p>Downloaded files are organized by dataset:</p>
+<div class="highlight"><pre><span></span><code>&lt;repo_root&gt;/
+  └── data/
+      ├── era5-land/
+      │   └── raw/
+      │       ├── era5-land_N40W10S35E5_abc123_2023-01.grib
+      │       ├── era5-land_N40W10S35E5_abc123_2023-02.grib
+      │       └── ...
+      └── era5-world/
+          └── raw/
+              ├── era5-world_N50W20S30E10_def456_2023-01.grib
+              └── ...
+</code></pre></div>
+<p>The <code>raw/</code> subdirectory indicates these files haven't been processed yet. Later pipeline stages will create <code>processed/</code>, <code>cleaned/</code>, etc.</p>
+<h3 id="filename-convention">Filename Convention<a class="headerlink" href="#filename-convention" title="Permanent link">&para;</a></h3>
+<p>Each file follows this pattern:</p>
+<div class="highlight"><pre><span></span><code>{dataset}_{coordinates}_{hash}_{year}-{month}.{ext}
+</code></pre></div>
+<p><strong>Example</strong>: <code>era5-land_N40W10S35E5_abc123def456_2023-01.grib</code></p>
+<ul>
+<li><code>dataset</code>: <code>era5-land</code> or <code>era5-world</code></li>
+<li><code>coordinates</code>: Encoded bounding box (N=north, W=west, S=south, E=east)</li>
+<li><code>hash</code>: 12-character hash of (dataset + variables + region)</li>
+<li><code>year-month</code>: Data period</li>
+<li><code>ext</code>: File extension (<code>.grib</code> for CDS downloads)</li>
+</ul>
+<p><strong>Why the hash?</strong> It lets you distinguish between downloads of the same region but different variables:</p>
+<div class="highlight"><pre><span></span><code>era5-land_N40W10S35E5_abc123_2023-01.grib  # temperature only
+era5-land_N40W10S35E5_def456_2023-01.grib  # temperature + precipitation
+</code></pre></div>
+<h3 id="existing-file-handling">Existing File Handling<a class="headerlink" href="#existing-file-handling" title="Permanent link">&para;</a></h3>
+<p>The <code>existing_file_action</code> setting controls what happens when a file already exists:</p>
+<h4 id="skip_all-recommended"><code>skip_all</code> (Recommended)<a class="headerlink" href="#skip_all-recommended" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;existing_file_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;skip_all&quot;</span>
+</code></pre></div>
+<p>Skips any month that already has a complete file. This is:
+- <strong>Fast</strong>: No re-downloads
+- <strong>Safe</strong>: Doesn't overwrite good data
+- <strong>Resume-friendly</strong>: If a download fails partway through, re-running skips completed months</p>
+<p><strong>When to use</strong>: Almost always (default for batch mode)</p>
+<h4 id="overwrite"><code>overwrite</code><a class="headerlink" href="#overwrite" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;existing_file_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;overwrite&quot;</span>
+</code></pre></div>
+<p>Re-downloads everything, replacing existing files.</p>
+<p><strong>When to use</strong>: 
+- You know the existing files are corrupted
+- CDS has updated the dataset and you need the new version
+- You're testing download settings</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This can waste a lot of time and bandwidth!</p>
+</div>
+<h4 id="prompt-interactive-only"><code>prompt</code> (Interactive Only)<a class="headerlink" href="#prompt-interactive-only" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;existing_file_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;prompt&quot;</span>
+</code></pre></div>
+<p>Asks you for each file whether to skip or overwrite.</p>
+<p><strong>When to use</strong>: 
+- Interactive mode when you want control over individual files
+- Not available in batch mode (treated as <code>skip_all</code>)</p>
+<h3 id="file-validation">File Validation<a class="headerlink" href="#file-validation" title="Permanent link">&para;</a></h3>
+<p>After downloading, the tool validates each file:</p>
+<ul>
+<li><strong>ZIP files</strong>: Automatically extracts <code>.grib</code> files</li>
+<li><strong>Magic number check</strong>: Verifies file starts with GRIB signature</li>
+<li><strong>Size check</strong>: Warns if file is suspiciously small (&lt;50 KB)</li>
+</ul>
+<p>Corrupted or incomplete downloads are logged as failures and can be retried.</p>
+<hr />
+<h2 id="download-settings">Download Settings<a class="headerlink" href="#download-settings" title="Permanent link">&para;</a></h2>
+<h3 id="parallel-downloads">Parallel Downloads<a class="headerlink" href="#parallel-downloads" title="Permanent link">&para;</a></h3>
+<p>Download multiple months simultaneously to speed up large requests.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;parallel_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_concurrent&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="choosing-max_concurrent">Choosing <code>max_concurrent</code><a class="headerlink" href="#choosing-max_concurrent" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>1</strong>: Sequential (slowest, but most reliable)</li>
+<li><strong>2</strong>: Good default (balances speed and stability)</li>
+<li><strong>3-4</strong>: Faster for large downloads, but risks hitting CDS rate limits</li>
+<li><strong>5+</strong>: Not recommended (may cause timeouts or account warnings)</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Connection Speed Matters</p>
+<p>If you have slow internet (&lt;10 Mbps), parallelization won't help much. Stick with 1-2.</p>
+</div>
+<h4 id="efficiency-factor">Efficiency Factor<a class="headerlink" href="#efficiency-factor" title="Permanent link">&para;</a></h4>
+<p>The tool assumes parallel downloads are about 60% as efficient as perfect linear scaling. For example:</p>
+<ul>
+<li>12 files, sequential: 60 minutes</li>
+<li>12 files, 2 parallel: ~36 minutes (not 30)</li>
+<li>12 files, 4 parallel: ~22 minutes (not 15)</li>
+</ul>
+<p>This accounts for:
+- CDS queue management
+- Connection overhead
+- Retry delays</p>
+<h3 id="retry-settings">Retry Settings<a class="headerlink" href="#retry-settings" title="Permanent link">&para;</a></h3>
+<p>Handles temporary failures gracefully.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;retry_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;max_retries&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retry_delay_sec&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="how-retries-work">How Retries Work<a class="headerlink" href="#how-retries-work" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Download request sent to CDS</li>
+<li>If it fails (timeout, connection error, server error), wait <code>retry_delay_sec</code> seconds</li>
+<li>Try again (up to <code>max_retries</code> times total)</li>
+<li>If all retries exhausted, mark month as failed and continue to next month</li>
+</ol>
+<h4 id="common-failure-reasons">Common Failure Reasons<a class="headerlink" href="#common-failure-reasons" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>CDS queue delays</strong>: Request waits too long in queue</li>
+<li><strong>Network hiccups</strong>: Temporary connection loss</li>
+<li><strong>Server overload</strong>: CDS is busy during peak hours (usually European daytime)</li>
+<li><strong>API errors</strong>: Rare CDS internal errors</li>
+</ul>
+<p>Most failures are temporary and resolve with retries.</p>
+<h4 id="recommended-settings">Recommended Settings<a class="headerlink" href="#recommended-settings" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>max_retries</th>
+<th>retry_delay_sec</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Default</td>
+<td>3-6</td>
+<td>15-30</td>
+<td>Good for most cases</td>
+</tr>
+<tr>
+<td>Unreliable connection</td>
+<td>10</td>
+<td>30</td>
+<td>More patient</td>
+</tr>
+<tr>
+<td>Fast failure</td>
+<td>1-2</td>
+<td>10</td>
+<td>Fail fast and move on</td>
+</tr>
+<tr>
+<td>HPC batch job</td>
+<td>10</td>
+<td>60</td>
+<td>Jobs run unattended, be patient</td>
+</tr>
+</tbody>
+</table>
+<h3 id="speed-estimation">Speed Estimation<a class="headerlink" href="#speed-estimation" title="Permanent link">&para;</a></h3>
+<p>Before downloading, the tool:</p>
+<ol>
+<li><strong>Tests your internet speed</strong> (quick 10-second test)</li>
+<li><strong>Estimates file sizes</strong> based on variables, region, and resolution</li>
+<li><strong>Calculates total time</strong> accounting for processing overhead and parallelization</li>
+</ol>
+<p>These are estimates and can vary based on:
+- CDS server load
+- Network variability
+- Actual data density (some months may be larger/smaller)</p>
+<hr />
+<h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
+<p>Every run produces detailed logs with timestamps, parameters, and outcomes.</p>
+<h3 id="log-file-locations">Log File Locations<a class="headerlink" href="#log-file-locations" title="Permanent link">&para;</a></h3>
+<p>Logs are saved to <code>&lt;repo_root&gt;/logs/weather_data_retrieval/</code>:</p>
+<div class="highlight"><pre><span></span><code>logs/
+  └── weather_data_retrieval/
+      ├── era5-land_N40W10S35E5_abc123_2023-01_2023-12_retrieved-20250210T143022.log
+      └── run_automatic_20250210_120045.log
+</code></pre></div>
+<h3 id="log-file-naming">Log File Naming<a class="headerlink" href="#log-file-naming" title="Permanent link">&para;</a></h3>
+<p><strong>Final logs</strong> (after successful completion):
+<div class="highlight"><pre><span></span><code>{filename_base}_{start-date}_{end-date}_retrieved-{timestamp}.log
+</code></pre></div></p>
+<p><strong>Temporary logs</strong> (if run fails early):
+<div class="highlight"><pre><span></span><code>run_{mode}_{timestamp}.log
+</code></pre></div></p>
+<h3 id="whats-logged">What's Logged<a class="headerlink" href="#whats-logged" title="Permanent link">&para;</a></h3>
+<p>Each log file contains:</p>
+<ul>
+<li><strong>Configuration summary</strong>: All parameters used</li>
+<li><strong>Download estimates</strong>: Size and time predictions</li>
+<li><strong>Progress updates</strong>: Each month started/completed</li>
+<li><strong>Validation results</strong>: File checks, size verifications</li>
+<li><strong>Errors and retries</strong>: Failed attempts and retry counts</li>
+<li><strong>Final summary</strong>: Success/skip/fail counts</li>
+</ul>
+<h3 id="log-levels">Log Levels<a class="headerlink" href="#log-levels" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>DEBUG</strong>: Everything, including prompts and internal state (file only)</li>
+<li><strong>INFO</strong>: Normal progress updates</li>
+<li><strong>WARNING</strong>: Issues that didn't stop the download (e.g., retries)</li>
+<li><strong>ERROR</strong>: Failed downloads or critical issues</li>
+</ul>
+<h3 id="example-log-excerpt">Example Log Excerpt<a class="headerlink" href="#example-log-excerpt" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>2025-02-10 14:30:15 | INFO | Starting AUTOMATIC run
+2025-02-10 14:30:15 | INFO | Configuration validation successful
+2025-02-10 14:30:16 | INFO | Detected speed: 45.3 Mbps
+2025-02-10 14:30:16 | INFO | Estimated total size: 1,234.5 MB
+2025-02-10 14:30:16 | INFO | Estimated total time: 22m 15s
+2025-02-10 14:30:16 | INFO | Beginning download process
+2025-02-10 14:30:45 | INFO | Download completed: 2023-01 (42.3 MB)
+2025-02-10 14:31:12 | WARNING | Download failed: 2023-02 (Connection timeout)
+2025-02-10 14:31:27 | INFO | Retry 1/6: 2023-02
+2025-02-10 14:31:58 | INFO | Download completed: 2023-02 (41.8 MB)
+...
+2025-02-10 14:52:03 | INFO | Download process completed
+2025-02-10 14:52:03 | INFO | Successful: 12, Skipped: 0, Failed: 0
+</code></pre></div>
+<hr />
+<h2 id="hpc-workflows">HPC Workflows<a class="headerlink" href="#hpc-workflows" title="Permanent link">&para;</a></h2>
+<p>The package includes shell scripts optimized for HPC job submission.</p>
+<h3 id="using-the-provided-scripts">Using the Provided Scripts<a class="headerlink" href="#using-the-provided-scripts" title="Permanent link">&para;</a></h3>
+<p>Located in the package directory:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># For ERA5-Land downloads</span>
+bash<span class="w"> </span>packages/weather_data_retrieval/main_land.sh
+
+<span class="c1"># For ERA5 (world) downloads</span>
+bash<span class="w"> </span>packages/weather_data_retrieval/main_world.sh
+</code></pre></div>
+<p>These scripts:
+- Load the conda environment
+- Set up proper paths
+- Run batch mode with a predefined config
+- Can be submitted to Slurm, PBS, or other job schedulers</p>
+<h3 id="example-slurm-submission">Example SLURM Submission<a class="headerlink" href="#example-slurm-submission" title="Permanent link">&para;</a></h3>
+<p>Create a file <code>submit_weather_download.slurm</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --job-name=weather_download</span>
+<span class="c1">#SBATCH --output=logs/weather_%j.out</span>
+<span class="c1">#SBATCH --error=logs/weather_%j.err</span>
+<span class="c1">#SBATCH --time=24:00:00</span>
+<span class="c1">#SBATCH --ntasks=1</span>
+<span class="c1">#SBATCH --cpus-per-task=4</span>
+<span class="c1">#SBATCH --mem=8G</span>
+
+<span class="c1"># Load environment</span>
+module<span class="w"> </span>load<span class="w"> </span>anaconda3
+<span class="nb">source</span><span class="w"> </span>activate<span class="w"> </span>osme
+
+<span class="c1"># Run download</span>
+osme-weather<span class="w"> </span>--config<span class="w"> </span>configs/weather/era5_india_2023.json<span class="w"> </span>--verbose
+</code></pre></div>
+<p>Submit with:
+<div class="highlight"><pre><span></span><code>sbatch<span class="w"> </span>submit_weather_download.slurm
+</code></pre></div></p>
+<h3 id="hpc-best-practices">HPC Best Practices<a class="headerlink" href="#hpc-best-practices" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Use batch mode</strong>: No prompts means it can run unattended</li>
+<li><strong>Set high retry counts</strong>: Jobs may run during off-peak hours with better CDS availability</li>
+<li><strong>Enable verbose logging</strong>: Helpful for debugging from log files later</li>
+<li><strong>Request adequate time</strong>: Better to overestimate than have jobs killed</li>
+<li><strong>Use parallelization</strong>: HPC nodes often have good network connections</li>
+<li><strong>Store in scratch space</strong>: Large downloads should go to fast scratch storage, not home directories</li>
+</ol>
+<h3 id="monitoring-long-jobs">Monitoring Long Jobs<a class="headerlink" href="#monitoring-long-jobs" title="Permanent link">&para;</a></h3>
+<p>Check progress by tailing the log file:</p>
+<div class="highlight"><pre><span></span><code>tail<span class="w"> </span>-f<span class="w"> </span>logs/weather_data_retrieval/era5-land_*.log
+</code></pre></div>
+<p>Or check the SLURM output:</p>
+<div class="highlight"><pre><span></span><code>tail<span class="w"> </span>-f<span class="w"> </span>logs/weather_12345.out
+</code></pre></div>
+<hr />
+<h2 id="advanced-patterns">Advanced Patterns<a class="headerlink" href="#advanced-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="multi-region-downloads">Multi-Region Downloads<a class="headerlink" href="#multi-region-downloads" title="Permanent link">&para;</a></h3>
+<p>Download the same time period for multiple regions by using separate configs:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Europe</span>
+osme-weather<span class="w"> </span>--config<span class="w"> </span>configs/weather/era5_europe_2023.json
+
+<span class="c1"># Asia</span>
+osme-weather<span class="w"> </span>--config<span class="w"> </span>configs/weather/era5_asia_2023.json
+
+<span class="c1"># Americas</span>
+osme-weather<span class="w"> </span>--config<span class="w"> </span>configs/weather/era5_americas_2023.json
+</code></pre></div>
+<h3 id="multi-year-pipelines">Multi-Year Pipelines<a class="headerlink" href="#multi-year-pipelines" title="Permanent link">&para;</a></h3>
+<p>For very long time series, break into chunks:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>year<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">2010</span>..2023<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Downloading </span><span class="nv">$year</span><span class="s2">...&quot;</span>
+<span class="w">  </span>osme-weather<span class="w"> </span>--config<span class="w"> </span>configs/weather/era5_<span class="si">${</span><span class="nv">year</span><span class="si">}</span>.json
+<span class="k">done</span>
+</code></pre></div>
+<p>Each config differs only in start/end dates:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2010-01-01&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2010-12-31&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="resuming-failed-downloads">Resuming Failed Downloads<a class="headerlink" href="#resuming-failed-downloads" title="Permanent link">&para;</a></h3>
+<p>If a download fails partway through:</p>
+<ol>
+<li><strong>Check the log</strong> to see which months succeeded</li>
+<li><strong>Re-run with the same config</strong> – <code>skip_all</code> will skip completed months</li>
+<li><strong>Only failed months</strong> will be re-attempted</li>
+</ol>
+<p>No need to manually track what's missing!</p>
+<h3 id="testing-configurations">Testing Configurations<a class="headerlink" href="#testing-configurations" title="Permanent link">&para;</a></h3>
+<p>Before downloading years of data, test your config with a small date range:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-01-01&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-01-31&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Once you verify it works:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h2 id="common-workflows">Common Workflows<a class="headerlink" href="#common-workflows" title="Permanent link">&para;</a></h2>
+<h3 id="workflow-1-exploratory-research">Workflow 1: Exploratory Research<a class="headerlink" href="#workflow-1-exploratory-research" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Download a small sample to test analysis code</p>
+<ol>
+<li>Use <strong>interactive mode</strong> to explore variables</li>
+<li>Download <strong>1-3 months</strong> of data</li>
+<li>Develop your analysis pipeline</li>
+<li>When ready, create a <strong>batch config</strong> for full download</li>
+<li>Run the full download overnight or on HPC</li>
+</ol>
+<h3 id="workflow-2-production-pipeline">Workflow 2: Production Pipeline<a class="headerlink" href="#workflow-2-production-pipeline" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Reproducible data acquisition for published research</p>
+<ol>
+<li>Create <strong>version-controlled configs</strong> in <code>configs/weather/</code></li>
+<li>Use <strong>batch mode</strong> for all downloads</li>
+<li><strong>Document configs</strong> in your README (which region, which dates, why)</li>
+<li><strong>Archive configs</strong> with your published research for reproducibility</li>
+<li>Rerun identical configs if you need to verify or extend results</li>
+</ol>
+<h3 id="workflow-3-multi-country-comparison">Workflow 3: Multi-Country Comparison<a class="headerlink" href="#workflow-3-multi-country-comparison" title="Permanent link">&para;</a></h3>
+<p><strong>Goal</strong>: Compare marginal emissions across countries</p>
+<ol>
+<li>Create <strong>one config per country</strong> with appropriate region bounds</li>
+<li>Use <strong>identical variables and date ranges</strong> for fair comparison</li>
+<li><strong>Name configs clearly</strong>: <code>era5_india.json</code>, <code>era5_spain.json</code>, etc.</li>
+<li>Run downloads in <strong>parallel</strong> (different terminal sessions or HPC jobs)</li>
+<li>Use <code>skip_all</code> so you can safely rerun without duplication</li>
+</ol>
+<hr />
+<h2 id="tips-tricks">Tips &amp; Tricks<a class="headerlink" href="#tips-tricks" title="Permanent link">&para;</a></h2>
+<h3 id="speed-up-downloads">🚀 Speed Up Downloads<a class="headerlink" href="#speed-up-downloads" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use <strong>ERA5</strong> (0.25°) instead of <strong>ERA5-Land</strong> (0.1°) if resolution doesn't matter</li>
+<li><strong>Smaller regions</strong> = smaller files = faster downloads</li>
+<li><strong>Fewer variables</strong> = smaller files (do you really need all 20 variables?)</li>
+<li><strong>Enable parallelization</strong> with <code>max_concurrent: 2-3</code></li>
+<li>Download during <strong>off-peak hours</strong> (nights/weekends in Europe)</li>
+</ul>
+<h3 id="save-disk-space">💾 Save Disk Space<a class="headerlink" href="#save-disk-space" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Compress old files</strong>: GRIB files compress well with <code>gzip</code></li>
+<li><strong>Delete unnecessary intermediate files</strong> after processing</li>
+<li><strong>Use external storage</strong> for archives (not actively used data)</li>
+<li><strong>Sample by month</strong>: Do you need <em>every</em> month? Maybe every 3rd month is enough for validation?</li>
+</ul>
+<h3 id="troubleshooting-downloads">🔧 Troubleshooting Downloads<a class="headerlink" href="#troubleshooting-downloads" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Check CDS status</strong>: <a href="https://cds.climate.copernicus.eu">https://cds.climate.copernicus.eu</a> shows system status</li>
+<li><strong>Retry a different time</strong>: CDS is faster at night (Europe timezone)</li>
+<li><strong>Simplify request</strong>: Fewer variables or smaller region may avoid timeouts</li>
+<li><strong>Check your API key</strong>: Expired keys cause authentication failures</li>
+</ul>
+<h3 id="organizing-configs">📋 Organizing Configs<a class="headerlink" href="#organizing-configs" title="Permanent link">&para;</a></h3>
+<p>Suggested structure:</p>
+<div class="highlight"><pre><span></span><code>configs/
+  └── weather/
+      ├── production/
+      │   ├── india_2020-2023.json
+      │   └── global_2022.json
+      ├── testing/
+      │   └── quick_test.json
+      └── archive/
+          └── old_india_2019.json
+</code></pre></div>
+<h3 id="sharing-configs-with-team">🔄 Sharing Configs with Team<a class="headerlink" href="#sharing-configs-with-team" title="Permanent link">&para;</a></h3>
+<p>Use a template pattern:</p>
+<p><strong>Template</strong> (<code>configs/weather/template_country.json</code>):
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data_provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cds&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dataset_short_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;era5-land&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YOUR_API_KEY_HERE&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YYYY-MM-DD&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;YYYY-MM-DD&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;region_bounds&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">N</span><span class="p">,</span><span class="w"> </span><span class="err">W</span><span class="p">,</span><span class="w"> </span><span class="err">S</span><span class="p">,</span><span class="w"> </span><span class="err">E</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;variables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;2m_temperature&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;total_precipitation&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;existing_file_action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;skip_all&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retry_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;max_retries&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;retry_delay_sec&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;parallel_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max_concurrent&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>Team members copy and fill in their values.</p>
+<hr />
+<h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Dive deeper into configs</strong>: See <a href="../configuration/">Configuration Reference</a> for every parameter</li>
+<li><strong>Having issues?</strong>: Check <a href="troubleshooting.md">Troubleshooting</a> for solutions</li>
+<li><strong>Understand the code</strong>: Browse the <a href="../codebase/">API Reference</a></li>
+<li><strong>Continue the pipeline</strong>: Move to <a href="../../osme-grid-data-retrieval-documentation/">grid_data_retrieval</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.instant", "search.suggest", "search.highlight", "toc.integrate", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

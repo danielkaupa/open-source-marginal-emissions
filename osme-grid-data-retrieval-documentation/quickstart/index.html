@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#quickstart-guide" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -594,6 +599,52 @@
   
   
     <li class="md-nav__item">
+      <a href="../../osme-weather-data-retrieval-documentation/user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../osme-weather-data-retrieval-documentation/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../osme-weather-data-retrieval-documentation/codebase/" class="md-nav__link">
         
   
@@ -702,6 +753,21 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -714,6 +780,373 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-install-the-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Install the Module
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-verify-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Verify Installation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-run-fetch-2-months-of-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      First Run: Fetch 2 Months of Data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="First Run: Fetch 2 Months of Data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-cli-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using CLI Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-a-configuration-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a Configuration File
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expected-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expected Output
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-your-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Your Output
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Check Your Output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspect-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inspect Data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expected-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expected Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Use Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fetch-full-year" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fetch Full Year
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#re-download-existing-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Re-Download Existing Data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keep-monthly-files-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keep Monthly Files Separate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-output-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Output Directory
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-file-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration File Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration File Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimal-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimal Config
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full Config
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-year-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Year Batch
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-process-your-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Process Your Data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-fetch-weather-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Fetch Weather Data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-join-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Join Datasets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-build-mef-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Build MEF Models
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command not found
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-limiting-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rate limiting errors
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#path-resolution-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Path resolution issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Network errors
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-options-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI Options Reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python API
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Next?
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1146,9 +1579,361 @@
   
 
 
-  <h1>Quickstart</h1>
+<h1 id="quickstart-guide">Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Permanent link">&para;</a></h1>
+<p>Get started with <code>grid_data_retrieval</code> in 5 minutes.</p>
+<hr />
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>Before you begin, ensure you have:</p>
+<ul>
+<li>Python ≥ 3.11</li>
+<li>The OSME repository cloned</li>
+<li><code>osme_common</code> package installed (shared utilities)</li>
+</ul>
+<hr />
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<h3 id="1-install-the-module">1. Install the Module<a class="headerlink" href="#1-install-the-module" title="Permanent link">&para;</a></h3>
+<p>From the repository root:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Install in editable mode</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>packages/grid_data_retrieval
+</code></pre></div>
+<p>This registers two CLI commands:
+- <code>osme-grid</code> (recommended)
+- <code>gdr</code> (short alias)</p>
+<h3 id="2-verify-installation">2. Verify Installation<a class="headerlink" href="#2-verify-installation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span>--help
+</code></pre></div>
+<p>You should see usage information and available options.</p>
+<hr />
+<h2 id="first-run-fetch-2-months-of-data">First Run: Fetch 2 Months of Data<a class="headerlink" href="#first-run-fetch-2-months-of-data" title="Permanent link">&para;</a></h2>
+<p>Let's fetch grid data for November-December 2018.</p>
+<h3 id="using-cli-arguments">Using CLI Arguments<a class="headerlink" href="#using-cli-arguments" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--start-date<span class="w"> </span><span class="s2">&quot;2018-11-01 00:00:00&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--end-date<span class="w"> </span><span class="s2">&quot;2018-12-31 23:55:00&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--verbose
+</code></pre></div>
+<h3 id="using-a-configuration-file">Using a Configuration File<a class="headerlink" href="#using-a-configuration-file" title="Permanent link">&para;</a></h3>
+<p>Create <code>configs/grid/quickstart.json</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2018-11-01 00:00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2018-12-31 23:55:00&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Run:</p>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span>--config<span class="w"> </span>configs/grid/quickstart.json<span class="w"> </span>--verbose
+</code></pre></div>
+<h3 id="expected-output">Expected Output<a class="headerlink" href="#expected-output" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>============================================================
+Starting Grid Data Retrieval at 2025-02-10T14:30:00
+============================================================
 
-<p>Currently under development!</p>
+============================================================
+Fetching Monthly Batches from API
+============================================================
+Fetching monthly batches from 2018-11-01 00:00:00 → 2018-12-31 23:55:00
+API URL: https://32u36xakx6.execute-api.us-east-2.amazonaws.com/v4/get-merit-data
+Output directory: /path/to/data/grid_data/raw/monthly
+
+Fetching monthly data: 100%|████████████████| 2/2 [00:15&lt;00:00,  7.5s/it]
+Saved: carbontracker_grid-data_2018_11.parquet
+Saved: carbontracker_grid-data_2018_12.parquet
+Fetched 2 monthly file(s).
+
+============================================================
+Combining Monthly Files
+============================================================
+Found 2 monthly file(s) to combine.
+Date range: 2018-11-01 00:00:00 → 2018-12-31 23:55:00
+Writing combined file: carbontracker_grid-data_2018-11_2018-12.parquet
+Combined file created successfully.
+
+============================================================
+Retrieval completed successfully!
+Raw data saved to: /path/to/data/grid_data/raw/carbontracker_grid-data_2018-11_2018-12.parquet
+============================================================
+
+Next steps:
+  - Use data_cleaning_and_joining module for processing
+  - Apply gap-filling, resampling, timezone conversion as needed
+</code></pre></div>
+<hr />
+<h2 id="check-your-output">Check Your Output<a class="headerlink" href="#check-your-output" title="Permanent link">&para;</a></h2>
+<h3 id="file-structure">File Structure<a class="headerlink" href="#file-structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>data/grid_data/raw/
+├── monthly/
+│   ├── carbontracker_grid-data_2018_11.parquet
+│   └── carbontracker_grid-data_2018_12.parquet
+└── carbontracker_grid-data_2018-11_2018-12.parquet  # Combined
+
+logs/grid_data_retrieval/
+└── grid_retrieval_20250210_143000.log
+</code></pre></div>
+<h3 id="inspect-data">Inspect Data<a class="headerlink" href="#inspect-data" title="Permanent link">&para;</a></h3>
+<p>Using Python:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+
+<span class="c1"># Load combined file</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;data/grid_data/raw/carbontracker_grid-data_2018-11_2018-12.parquet&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shape: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Columns: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">First 5 rows:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+
+<span class="c1"># Summary stats</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Summary:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+</code></pre></div>
+<h3 id="expected-variables">Expected Variables<a class="headerlink" href="#expected-variables" title="Permanent link">&para;</a></h3>
+<p>Your dataset should include:</p>
+<ul>
+<li><code>timestamp</code> - UTC datetime (5-min intervals)</li>
+<li><code>thermal_generation</code> - MW</li>
+<li><code>gas_generation</code> - MW</li>
+<li><code>hydro_generation</code> - MW</li>
+<li><code>nuclear_generation</code> - MW</li>
+<li><code>renewable_generation</code> - MW</li>
+<li><code>total_generation</code> - MW</li>
+<li><code>demand_met</code> - MW</li>
+<li><code>net_demand</code> - MW</li>
+<li><code>g_co2_per_kwh</code> - g CO₂/kWh</li>
+<li><code>tons_co2_per_mwh</code> - tons CO₂/MWh</li>
+<li><code>tons_co2</code> - tons CO₂</li>
+</ul>
+<hr />
+<h2 id="common-use-cases">Common Use Cases<a class="headerlink" href="#common-use-cases" title="Permanent link">&para;</a></h2>
+<h3 id="fetch-full-year">Fetch Full Year<a class="headerlink" href="#fetch-full-year" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--start-date<span class="w"> </span><span class="s2">&quot;2020-01-01 00:00:00&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--end-date<span class="w"> </span><span class="s2">&quot;2020-12-31 23:55:00&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--verbose
+</code></pre></div>
+<h3 id="re-download-existing-data">Re-Download Existing Data<a class="headerlink" href="#re-download-existing-data" title="Permanent link">&para;</a></h3>
+<p>By default, existing months are skipped. To re-download:</p>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config<span class="w"> </span>configs/grid/my_config.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--overwrite-existing
+</code></pre></div>
+<h3 id="keep-monthly-files-separate">Keep Monthly Files Separate<a class="headerlink" href="#keep-monthly-files-separate" title="Permanent link">&para;</a></h3>
+<p>If you don't want a combined file:</p>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--start-date<span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--end-date<span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--no-combine
+</code></pre></div>
+<h3 id="custom-output-directory">Custom Output Directory<a class="headerlink" href="#custom-output-directory" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>osme-grid<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config<span class="w"> </span>configs/grid/my_config.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output-dir<span class="w"> </span>/path/to/custom/directory
+</code></pre></div>
+<hr />
+<h2 id="configuration-file-examples">Configuration File Examples<a class="headerlink" href="#configuration-file-examples" title="Permanent link">&para;</a></h2>
+<h3 id="minimal-config">Minimal Config<a class="headerlink" href="#minimal-config" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-01-01 00:00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-12-31 23:55:00&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="full-config">Full Config<a class="headerlink" href="#full-config" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-01-01 00:00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-12-31 23:55:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://32u36xakx6.execute-api.us-east-2.amazonaws.com/v4/get-merit-data&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;output_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;overwrite_existing&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;combine_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="multi-year-batch">Multi-Year Batch<a class="headerlink" href="#multi-year-batch" title="Permanent link">&para;</a></h3>
+<p>For large downloads, create separate configs per year:</p>
+<p><strong>configs/grid/india_2019.json:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2019-01-01 00:00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2019-12-31 23:55:00&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>configs/grid/india_2020.json:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;start_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-01-01 00:00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;end_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-12-31 23:55:00&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>Run sequentially or in parallel:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Sequential</span>
+osme-grid<span class="w"> </span>--config<span class="w"> </span>configs/grid/india_2019.json
+osme-grid<span class="w"> </span>--config<span class="w"> </span>configs/grid/india_2020.json
+
+<span class="c1"># Parallel (in separate terminals)</span>
+osme-grid<span class="w"> </span>--config<span class="w"> </span>configs/grid/india_2019.json<span class="w"> </span>--output-dir<span class="w"> </span>data/grid_data/2019<span class="w"> </span><span class="p">&amp;</span>
+osme-grid<span class="w"> </span>--config<span class="w"> </span>configs/grid/india_2020.json<span class="w"> </span>--output-dir<span class="w"> </span>data/grid_data/2020<span class="w"> </span><span class="p">&amp;</span>
+</code></pre></div>
+<hr />
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<h3 id="1-process-your-data">1. Process Your Data<a class="headerlink" href="#1-process-your-data" title="Permanent link">&para;</a></h3>
+<p>Raw grid data is at 5-minute intervals in UTC. You'll likely want to:</p>
+<ul>
+<li><strong>Resample</strong> to 30-minute intervals (to match weather data)</li>
+<li><strong>Convert timezone</strong> to local time (e.g., Asia/Kolkata for India)</li>
+<li><strong>Check for gaps</strong> and fill if necessary</li>
+</ul>
+<p>These operations are handled by the <code>data_cleaning_and_joining</code> module:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Resample (example - not yet implemented)</span>
+python<span class="w"> </span>-m<span class="w"> </span>data_cleaning_and_joining.grid.resample<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input<span class="w"> </span>data/grid_data/raw/carbontracker_grid-data_2020-01_2020-12.parquet<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>data/grid_data/processed/grid_30min.parquet<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--frequency<span class="w"> </span><span class="s2">&quot;30min&quot;</span>
+
+<span class="c1"># Convert timezone (example - not yet implemented)</span>
+python<span class="w"> </span>-m<span class="w"> </span>data_cleaning_and_joining.grid.set_timezone<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input<span class="w"> </span>data/grid_data/processed/grid_30min.parquet<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>data/grid_data/processed/grid_30min_ist.parquet<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--timezone<span class="w"> </span><span class="s2">&quot;Asia/Kolkata&quot;</span>
+</code></pre></div>
+<h3 id="2-fetch-weather-data">2. Fetch Weather Data<a class="headerlink" href="#2-fetch-weather-data" title="Permanent link">&para;</a></h3>
+<p>To train MEF models, you'll also need weather data:</p>
+<div class="highlight"><pre><span></span><code>osme-weather<span class="w"> </span>--config<span class="w"> </span>configs/weather/india_era5_2020.json
+</code></pre></div>
+<p>See the <a href="../weather_data_retrieval/"><code>weather_data_retrieval</code> documentation</a> for details.</p>
+<h3 id="3-join-datasets">3. Join Datasets<a class="headerlink" href="#3-join-datasets" title="Permanent link">&para;</a></h3>
+<p>Once you have both grid and weather data processed to the same temporal resolution and timezone, join them:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+
+<span class="n">grid</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;data/grid_data/processed/grid_30min_ist.parquet&quot;</span><span class="p">)</span>
+<span class="n">weather</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;data/weather_data/processed/weather_30min_ist.parquet&quot;</span><span class="p">)</span>
+
+<span class="c1"># Join on timestamp</span>
+<span class="n">joined</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">weather</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;inner&quot;</span><span class="p">)</span>
+
+<span class="n">joined</span><span class="o">.</span><span class="n">write_parquet</span><span class="p">(</span><span class="s2">&quot;data/processed/grid_weather_joined.parquet&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="4-build-mef-models">4. Build MEF Models<a class="headerlink" href="#4-build-mef-models" title="Permanent link">&para;</a></h3>
+<p>Use <code>marginal_emissions_modelling</code> to train and evaluate models.</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="command-not-found">Command not found<a class="headerlink" href="#command-not-found" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Make sure package is installed</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>packages/grid_data_retrieval
+
+<span class="c1"># Verify entry points</span>
+pip<span class="w"> </span>show<span class="w"> </span>grid-data-retrieval<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Entry points&quot;</span><span class="w"> </span>-A<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<h3 id="rate-limiting-errors">Rate limiting errors<a class="headerlink" href="#rate-limiting-errors" title="Permanent link">&para;</a></h3>
+<p>The API has a 5-second delay between requests. If you see rate limit errors, increase the delay in <code>sources/carbontracker.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">API_DELAY_SECONDS</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># Change from 5 to 10</span>
+</code></pre></div>
+<h3 id="path-resolution-issues">Path resolution issues<a class="headerlink" href="#path-resolution-issues" title="Permanent link">&para;</a></h3>
+<p>Check your data directory:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from osme_common.paths import data_dir; print(data_dir())&quot;</span>
+</code></pre></div>
+<p>If it's not what you expect, set the environment variable:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OSME_DATA_DIR</span><span class="o">=</span><span class="s2">&quot;/path/to/your/data&quot;</span>
+</code></pre></div>
+<h3 id="network-errors">Network errors<a class="headerlink" href="#network-errors" title="Permanent link">&para;</a></h3>
+<p>If downloads are interrupted:</p>
+<ol>
+<li>Re-run the same command - existing months will be skipped automatically</li>
+<li>Check your internet connection</li>
+<li>Verify the API is accessible: <code>curl https://carbontracker.in/</code></li>
+</ol>
+<hr />
+<h2 id="cli-options-reference">CLI Options Reference<a class="headerlink" href="#cli-options-reference" title="Permanent link">&para;</a></h2>
+<p>Quick reference for all CLI options:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--config</code></td>
+<td>path</td>
+<td>-</td>
+<td>JSON config file</td>
+</tr>
+<tr>
+<td><code>--start-date</code></td>
+<td>datetime</td>
+<td>2018-11-21 00:00:00</td>
+<td>Start date</td>
+</tr>
+<tr>
+<td><code>--end-date</code></td>
+<td>datetime</td>
+<td>2019-01-31 23:55:00</td>
+<td>End date</td>
+</tr>
+<tr>
+<td><code>--api-url</code></td>
+<td>URL</td>
+<td>CarbonTracker</td>
+<td>API endpoint</td>
+</tr>
+<tr>
+<td><code>--output-dir</code></td>
+<td>path</td>
+<td>data/grid_data/raw/</td>
+<td>Output directory</td>
+</tr>
+<tr>
+<td><code>--overwrite-existing</code></td>
+<td>flag</td>
+<td>false</td>
+<td>Re-download existing</td>
+</tr>
+<tr>
+<td><code>--no-combine</code></td>
+<td>flag</td>
+<td>false</td>
+<td>Don't combine files</td>
+</tr>
+<tr>
+<td><code>--verbose</code></td>
+<td>flag</td>
+<td>false</td>
+<td>Console output</td>
+</tr>
+<tr>
+<td><code>--quiet</code></td>
+<td>flag</td>
+<td>false</td>
+<td>Suppress console</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h2>
+<p>If you prefer to script your data retrieval:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">grid_data_retrieval.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_grid_retrieval</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2020-01-01 00:00:00&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2020-12-31 23:55:00&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;overwrite_existing&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;combine_files&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">exit_code</span> <span class="o">=</span> <span class="n">run_grid_retrieval</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">exit_code</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Success!&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed!&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
+<p>✅ You've successfully retrieved grid data<br />
+✅ You understand the output structure<br />
+✅ You know how to customize the retrieval  </p>
+<p><strong>Next:</strong>
+- Read the <a href="../codebase/">Codebase Reference</a> to understand the module architecture
+- Check the main <a href="../README.md">README</a> for detailed API documentation
+- Explore the <a href="../../">OSME documentation</a> for the full MEF workflow</p>
+<hr />
+<p><strong>Need help?</strong> Open an issue on <a href="https://github.com/danielkaupa/open-source-marginal-emissions/issues">GitHub</a> or email daniel.kaupa@outlook.com</p>
 
 
 

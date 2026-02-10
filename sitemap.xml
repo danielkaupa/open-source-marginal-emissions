@@ -2,78 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/ACKNOWLEDGEMENTS/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/CORE_CONCEPTS_AND_DEFINITIONS/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/PROJECT_ROADMAP/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-common-utilities-documentation/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-common-utilities-documentation/codebase/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-common-utilities-documentation/quickstart/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-data-cleaning-and-joining-documentation/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-data-cleaning-and-joining-documentation/codebase/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-data-cleaning-and-joining-documentation/quickstart/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-grid-data-retrieval-documentation/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-grid-data-retrieval-documentation/codebase/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-grid-data-retrieval-documentation/quickstart/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-marginal-emissions-modelling-documentation/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-marginal-emissions-modelling-documentation/codebase/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-marginal-emissions-modelling-documentation/quickstart/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-weather-data-retrieval-documentation/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-weather-data-retrieval-documentation/codebase/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
+    </url>
+    <url>
+         <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-weather-data-retrieval-documentation/configuration/</loc>
+         <lastmod>2026-02-10</lastmod>
     </url>
     <url>
          <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-weather-data-retrieval-documentation/quickstart/</loc>
-         <lastmod>2025-11-06</lastmod>
+         <lastmod>2026-02-10</lastmod>
+    </url>
+    <url>
+         <loc>https://danielkaupa.github.io/open-source-marginal-emissions/osme-weather-data-retrieval-documentation/user-guide/</loc>
+         <lastmod>2026-02-10</lastmod>
     </url>
 </urlset>

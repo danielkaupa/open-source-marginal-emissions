@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#weather-data-retrieval" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -556,6 +561,21 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -568,6 +588,121 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-does-this-package-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      What Does This Package Do?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Features
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Example
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interactive-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interactive Mode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch Mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-youll-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      What You'll Need
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next Steps
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-this-fits-into-your-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      How This Fits Into Your Workflow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting Help
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -587,6 +722,52 @@
   
   <span class="md-ellipsis">
     Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
     
   </span>
   
@@ -1146,9 +1327,76 @@
   
 
 
-  <h1>Overview</h1>
+<h1 id="weather-data-retrieval">Weather Data Retrieval<a class="headerlink" href="#weather-data-retrieval" title="Permanent link">&para;</a></h1>
+<p>Welcome! The <code>weather_data_retrieval</code> package makes it easy to download weather and climate reanalysis data for your marginal emissions modeling projects.</p>
+<h2 id="what-does-this-package-do">What Does This Package Do?<a class="headerlink" href="#what-does-this-package-do" title="Permanent link">&para;</a></h2>
+<p>This package helps you retrieve large-scale weather datasets from public sources with minimal hassle. Whether you need a few months of data for a pilot study or years of global coverage for production models, we've got you covered.</p>
+<p><strong>Currently supported:</strong>
+- <strong>ERA5</strong> (global reanalysis, 0.25° resolution, hourly)
+- <strong>ERA5-Land</strong> (land-focused, 0.1° resolution, hourly)</p>
+<p>Both are accessed via the Copernicus Climate Data Store (CDS) API.</p>
+<div class="admonition note">
+<p class="admonition-title">Expansion Coming Soon</p>
+<p>Open-Meteo and additional providers are on the roadmap! See the <a href="../../PROJECT_ROADMAP/">project roadmap</a> for details.</p>
+</div>
+<h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
+<p>✨ <strong>Two ways to work</strong>: Interactive wizard for exploration, or JSON configs for reproducible pipelines</p>
+<p>📦 <strong>Smart downloads</strong>: Automatically chunks data by month, handles retries, and skips files you already have</p>
+<p>⚡ <strong>Parallel downloads</strong>: Speed up large requests with concurrent downloads</p>
+<p>📝 <strong>Production-ready logging</strong>: Every download is logged with timestamps, configurations, and any issues</p>
+<p>🔧 <strong>HPC-friendly</strong>: Includes batch scripts and settings optimized for high-performance computing environments</p>
+<h2 id="quick-example">Quick Example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
+<h3 id="interactive-mode">Interactive Mode<a class="headerlink" href="#interactive-mode" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Just run the command and follow the prompts</span>
+osme-weather
+</code></pre></div>
+<h3 id="batch-mode">Batch Mode<a class="headerlink" href="#batch-mode" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Use a configuration file for reproducible downloads</span>
+osme-weather<span class="w"> </span>--config<span class="w"> </span>my_download.json
+</code></pre></div>
+<h2 id="what-youll-need">What You'll Need<a class="headerlink" href="#what-youll-need" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Python 3.11+</strong> (we recommend using conda or mamba)</li>
+<li><strong>A CDS account</strong> (free registration at <a href="https://cds.climate.copernicus.eu">https://cds.climate.copernicus.eu</a>)</li>
+<li><strong>Your CDS API key</strong> (found in your CDS profile after registration)</li>
+<li><strong>Disk space</strong> (varies by region and date range; the tool estimates this for you)</li>
+</ol>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>The weather data retrieval package is part of the <code>open-source-marginal-emissions</code> monorepo. </p>
+<p>From the repository root:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Install in development mode</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>packages/weather_data_retrieval
 
-<p>Currently under development!</p>
+<span class="c1"># Or install the full project with all packages</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+<p>This makes the <code>osme-weather</code> and <code>wdr</code> commands available in your terminal.</p>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>New to this package?</strong> Start with the <a href="quickstart/">Quickstart Guide</a> for a step-by-step first download</li>
+<li><strong>Ready to automate?</strong> Check out the <a href="user-guide/">User Guide</a> for batch configurations</li>
+<li><strong>Need specific config details?</strong> See the <a href="configuration/">Configuration Reference</a></li>
+<li><strong>Running into issues?</strong> Visit <a href="troubleshooting.md">Troubleshooting</a> for common problems and solutions</li>
+<li><strong>Want to understand the code?</strong> Browse the <a href="codebase/">API Reference</a></li>
+</ul>
+<h2 id="how-this-fits-into-your-workflow">How This Fits Into Your Workflow<a class="headerlink" href="#how-this-fits-into-your-workflow" title="Permanent link">&para;</a></h2>
+<p>The weather data retrieval package is the <strong>first step</strong> in the OSME pipeline:</p>
+<ol>
+<li><strong>weather_data_retrieval</strong> ← <em>You are here</em> – Download raw weather data</li>
+<li><strong>grid_data_retrieval</strong> – Download electricity grid data  </li>
+<li><strong>data_cleaning_and_joining</strong> – Align and integrate datasets  </li>
+<li><strong>marginal_emissions_modelling</strong> – Build your MEF models</li>
+</ol>
+<p>The data you download here gets saved to <code>data/&lt;dataset_short_name&gt;/raw/</code> and is ready for the next steps in your analysis.</p>
+<h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Check the <a href="troubleshooting.md">Troubleshooting</a> page for common issues</li>
+<li>Review the examples in the <a href="user-guide/">User Guide</a></li>
+<li>Open an issue on <a href="https://github.com/danielkaupa/open-source-marginal-emissions/issues">GitHub</a></li>
+<li>Read the detailed <a href="codebase/">API documentation</a> for advanced usage</li>
+</ul>
+<hr />
+<p><em>Let's get started! Head to the <a href="quickstart/">Quickstart Guide</a> →</em></p>
 
 
 
