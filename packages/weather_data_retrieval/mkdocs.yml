@@ -4,6 +4,8 @@ site_name: OSME - Weather Data Retrieval- Documentation
 nav:
   - Overview: index.md
   - Quickstart: quickstart.md
+  - User Guide: user-guide.md
+  - Configuration: configuration.md
   - Codebase: codebase.md
 # site_description: Retrieve ERA5‑Land and ERA5 weather data, interactively or via JSON config, with validation, logging, retries, and HPC‑friendly scripts.
 # site_url: https://danielkaupa.github.io/open-source-marginal-emissions/weather_data_retrieval/

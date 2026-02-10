@@ -231,6 +231,8 @@ logs/
 # *.joblib
 # *.pkl
 
+
+*.Rhistory
 ################################################################################
 # DOCUMENTATION OF DEP TOOL POLICIES (REFERENCE ONLY)
 # Lockfiles (poetry/pdm/pipenv/uv/pixi) improve reproducibility for APPS.
