@@ -1,8 +1,12 @@
 {
-  "GRID_DATA_URL": "https://api.yourdatasource.com/grid",
-  "START_DATE": "2023-01-01 00:00:00",
-  "END_DATE": "2023-01-31 23:55:00",
-  "OUTPUT_DIR": "./grid_data",
-  "SAVE_FORMAT": "json",
-  "SLEEP_SECONDS": 5
+  "_comment": "Grid Data Retrieval Configuration Example - FETCH ONLY",
+  "_description": "Fetch electricity grid data from CarbonTracker Merit API",
+  "_note": "This module only fetches raw data. Processing happens in data_cleaning_and_joining module.",
+
+  "start_date": "2018-11-21 00:00:00",
+  "end_date": "2026-02-05 23:55:00",
+  "api_url": "https://32u36xakx6.execute-api.us-east-2.amazonaws.com/v4/get-merit-data",
+  "overwrite_existing": false,
+  "combine_files": true
+
 }

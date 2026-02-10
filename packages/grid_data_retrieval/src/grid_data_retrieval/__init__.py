@@ -22,3 +22,21 @@ from osme_common.version_utils import get_repo_version
 
 __version__ = get_repo_version()
 __all__ = ["__version__"]
+
+
+"""
+Grid Data Retrieval Module
+===========================
+
+Module for retrieving electricity grid data from various sources.
+
+This module focuses exclusively on data retrieval/fetching.
+Data processing, resampling, and timezone conversion are handled
+by the data_cleaning_and_joining module.
+
+Submodules
+----------
+sources : API-specific data retrieval implementations
+utils : Shared utilities for validation, file management, logging
+io : Configuration loading and CLI interfaces
+"""
