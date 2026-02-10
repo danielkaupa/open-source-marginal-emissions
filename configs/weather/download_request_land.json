@@ -37,7 +37,6 @@
       "leaf_area_index_low_vegetation",
       "low_vegetation_cover",
       "k_index" ],
-  "save_dir": "./data/raw",
   "existing_file_action": "skip_all",
   "retry_settings": { "max_retries": 6, "retry_delay_sec": 15 },
   "parallel_settings": { "enabled": true, "max_concurrent": 2 }

@@ -68,18 +68,17 @@ class SessionState:
         self.fields = {
             "data_provider": {"value": None, "filled": False},          # 1
             "dataset_short_name": {"value": None, "filled": False},     # 2
-            "api_url": {"value": None, "filled": False},                # 3
-            "api_key": {"value": None, "filled": False},                # 4
-            "session_client": {"value": None, "filled": False},         # -
-            "save_dir": {"value": None, "filled": False},               # 5
-            "start_date": {"value": None, "filled": False},             # 6
-            "end_date": {"value": None, "filled": False},               # 7
-            "region_bounds": {"value": None, "filled": False},          # 8
-            "variables": {"value": None, "filled": False},              # 9
-            "existing_file_action": {"value": None, "filled": False},   # 10
-            "parallel_settings": {"value": None, "filled": False},      # 11
-            "retry_settings": {"value": None, "filled": False},         # 12
-            "inputs_confirmed": {"value": None, "filled": False},       # 13
+            "api_url": {"value": None, "filled": False},                # 3a
+            "api_key": {"value": None, "filled": False},                # 3b
+            "session_client": {"value": None, "filled": False},         # 4
+            "start_date": {"value": None, "filled": False},             # 5
+            "end_date": {"value": None, "filled": False},               # 6
+            "region_bounds": {"value": None, "filled": False},          # 7
+            "variables": {"value": None, "filled": False},              # 8
+            "existing_file_action": {"value": None, "filled": False},   # 9
+            "parallel_settings": {"value": None, "filled": False},      # 10
+            "retry_settings": {"value": None, "filled": False},         # 11
+            "inputs_confirmed": {"value": None, "filled": False},       # 12
         }
 
     def set(self, key, value):
@@ -239,6 +238,7 @@ def map_config_to_session(
         session: SessionState,
         *,
         logger=None,
+        echo_console=False,
         ) -> tuple[bool, list[str]]:
     """
     Validate and map a loaded JSON config into SessionState.
@@ -296,7 +296,7 @@ def map_config_to_session(
         else:
             session.set("api_url", api_url)
             session.set("api_key", api_key)
-            client = validate_cds_api_key(api_url, api_key, logger=logger)
+            client = validate_cds_api_key(api_url, api_key, logger=logger, echo_console=echo_console)
             if client is None:
                 errors.append("CDS authentication failed with provided api_url/api_key.")
             else:
@@ -404,18 +404,6 @@ def map_config_to_session(
         else:
             session.set("variables", valid)
             messages.append(f"variables = {', '.join(valid)}")
-
-    # ---------- Save directory ----------
-    raw_save_dir = cfg.get("save_dir", str(default_save_dir))
-    try:
-        resolved_save_dir = resolve_under(data_dir(create=True), raw_save_dir)
-        if not validate_directory(resolved_save_dir):
-            errors.append(f"Cannot access/create save_dir: {resolved_save_dir}")
-        else:
-            session.set("save_dir", str(resolved_save_dir))
-            messages.append(f"save_dir resolved to: {resolved_save_dir}")
-    except Exception as e:
-        errors.append(f"Failed to resolve save_dir '{raw_save_dir}': {e}")
 
     # ---------- Existing file policy ----------
     efa_raw = cfg.get("existing_file_action", cfg.get("file_policy", "case_by_case"))
@@ -550,8 +538,10 @@ def internet_speedtest(
             "https://mirror.de.leaseweb.net/speedtest/100mb.bin",
             "https://ipv4.download.thinkbroadband.com/100MB.zip",
         ]
-    _out("="*60 + "\nInternet speed test\n" + "="*60)
-    _out(f"\nRunning a short internet speed test (up to {max_seconds}s) to estimate your connection speed...")
+    _out("="*60)
+    _out("Internet speed test")
+    _out("="*60 + "\n")
+    _out(f"Running a short internet speed test (up to {max_seconds}s) to estimate your connection speed...")
     for url in test_urls:
         try:
             _out(f"Testing url:{url}")

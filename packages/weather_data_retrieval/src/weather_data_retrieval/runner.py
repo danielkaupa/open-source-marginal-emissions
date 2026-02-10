@@ -22,8 +22,7 @@
 # LIBRARY IMPORTS
 # ----------------------------------------------
 
-import json
-import os
+from pathlib import Path
 from datetime import datetime
 
 # ----------------------------------------------
@@ -37,7 +36,6 @@ from datetime import datetime
 # ----------------------------------------------
 
 from weather_data_retrieval.sources.cds_era5 import orchestrate_cds_downloads
-from weather_data_retrieval.io.cli import run_prompt_wizard
 
 from weather_data_retrieval.utils.session_management import (
     SessionState,
@@ -60,10 +58,9 @@ from weather_data_retrieval.utils.logging import (
     create_final_log_file,
 )
 from weather_data_retrieval.io.config_loader import (
-    load_and_validate_config,
     load_config
 )
-from osme_common.paths import data_dir, log_dir, resolve_under
+from osme_common.paths import data_dir, log_dir
 
 
 # ----------------------------------------------
@@ -96,54 +93,52 @@ def run(
     int
         Exit code: 0=success, 1=fatal error, 2=some downloads failed.
     """
-
-    console_handler_active = (run_mode == "interactive") or verbose
-
-    def echo_only_if_no_console_handler(force: bool = False) -> bool:
-        # In automatic non-verbose mode, console handler is absent.
-        # Return True to echo only selected messages (summary, warnings/errors/exceptions).
-        return force and (not console_handler_active)
-
-    save_base = config.get("save_dir")
-    if save_base:
-        save_path = resolve_under(data_dir(create=True), save_base)
-    else:
-        save_path = data_dir(create=True)
-
     if logger is None:
-        logger = setup_logger(str(log_dir(create=True)), run_mode=run_mode, verbose=verbose)
+        package_log_dir = log_dir(create=True) / "weather_data_retrieval"
+        logger = setup_logger(str(package_log_dir), run_mode=run_mode, verbose=verbose)
+        log_msg(f"Logging initialized at {package_log_dir}", logger, echo_console=verbose, force=True)
+    else:
+        log_msg("Using provided logger.", logger, echo_console=verbose, force=True)
 
     # Header
-    log_msg("=" * 60, logger, echo_console=echo_only_if_no_console_handler(False))
+    log_msg("=" * 60, logger, echo_console=verbose)
     log_msg(f"Starting {run_mode.upper()} run at {datetime.now().isoformat()}",
-            logger, echo_console=echo_only_if_no_console_handler(False))
-    log_msg("=" * 60, logger, echo_console=echo_only_if_no_console_handler(False))
+            logger=logger, echo_console=verbose, force=True)
+    log_msg("=" * 60, logger, echo_console=verbose)
+
+    # initialise
+    session = None
+    filename_base = None
 
     try:
         # 1) Validate config
         validate_config(config, logger=logger, run_mode=run_mode)
-        log_msg("Configuration validation successful.", logger, echo_console=echo_only_if_no_console_handler(False))
+        log_msg("Configuration validation successful.", logger, echo_console=verbose, force=True)
 
         # 2) Map config → session
         session = SessionState()
-        ok, notes = map_config_to_session(config, session, logger=logger)
+        ok, notes = map_config_to_session(config, session, logger=logger, echo_console=verbose)
         for note in notes:
-            log_msg(note, logger, echo_console=echo_only_if_no_console_handler(False))
+            log_msg(note, logger, echo_console=verbose)
         if not ok:
             log_msg("Config mapping reported blocking issues. Exiting.",
-                    logger, level="error", echo_console=echo_only_if_no_console_handler(True))
-            if "filename_base" in locals():
-                create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+                    logger=logger, level="error", echo_console=verbose, force=True)
+            if "filename_base":
+                create_final_log_file(session=session, filename_base=filename_base, original_logger=logger, delete_original=True, reattach_to_final=True)
             else:
-                log_msg("Skipping final log file creation because filename_base was not defined (run failed early).", logger)
+                log_msg("Skipping final log file creation because filename_base was not defined (run failed early).", logger=logger, echo_console=verbose, force=True)
             return 1
 
-        # 2b) Automatic mode cannot be case-by-case for existing file policy (already coerced by validate_config)
-        # Nothing to do here; messages already logged.
+        # 3) Determine save directory (always data/<dataset_short_name>/raw)
+        dataset_short_name = session.get("dataset_short_name")
+        if not dataset_short_name or not isinstance(dataset_short_name, str):
+            raise ValueError("dataset_short_name must be set in session before computing save_path")
+        save_path = data_dir(create=True) / str(dataset_short_name) / "raw"
+        save_path.mkdir(parents=True, exist_ok=True)
 
-        # 3) Short internet speed test (both modes)
-        speed_mbps = internet_speedtest(test_urls=None, max_seconds=10, logger=logger, echo_console=echo_only_if_no_console_handler(False))
-        log_msg(f"Detected speed: {speed_mbps:.1f} Mbps", logger, echo_console=echo_only_if_no_console_handler(False))
+        # 4) Short internet speed test (both modes)
+        speed_mbps = internet_speedtest(test_urls=None, max_seconds=10, logger=logger, echo_console=verbose)
+        log_msg(f"Detected speed: {speed_mbps:.1f} Mbps", logger, echo_console=verbose)
 
         dataset_short_name = session.get("dataset_short_name")
         if dataset_short_name == "era5-world":
@@ -152,7 +147,7 @@ def run(
             grid_res = 0.1
         else:
             raise ValueError(f"Unknown dataset_short_name: {dataset_short_name}")
-        # 4) Estimate size/time
+        # 5) Estimate size/time
         estimates = estimate_cds_download(
             variables=session.get("variables"),
             area=session.get("region_bounds"),
@@ -170,10 +165,10 @@ def run(
             estimates["total_time_sec"] = estimates["total_time_sec"] / (max_conc * efficiency_factor)
             log_msg(
                 f"Adjusted total time for parallel downloads: {format_duration(estimates['total_time_sec'])}",
-                logger, echo_console=echo_only_if_no_console_handler(False)
+                logger, echo_console=verbose
             )
 
-        # 5) Filename + hash
+        # 6) Filename + hash
         coord_str = format_coordinates_nwse(boundaries=session.get("region_bounds"))
         hash_str = generate_filename_hash(
             dataset_short_name=session.get("dataset_short_name"),
@@ -182,56 +177,69 @@ def run(
         )
         filename_base = f"{session.get('dataset_short_name')}_{coord_str}_{hash_str}"
 
-        # 6) Summary (ALWAYS printed in interactive/verbose; printed in non-verbose via echo)
-        summary = build_download_summary(session, estimates, speed_mbps)
-        log_msg(msg=summary, logger=logger, echo_console=echo_only_if_no_console_handler(force=True))
-        log_msg(msg=f"Output base filename: {filename_base}", logger=logger, echo_console=echo_only_if_no_console_handler(True))
+        # 7) Summary (ALWAYS printed in interactive/verbose; printed in non-verbose via echo)
+        summary = build_download_summary(session, estimates, speed_mbps, save_dir=save_path)
+        log_msg(msg=summary, logger=logger, echo_console=verbose, force=True)
+        log_msg(msg=f"Output base filename: {filename_base}", logger=logger, echo_console=verbose, force=True)
 
-        # 7) Downloads
+        # 8) Downloads
         successful, failed, skipped = [], [], []
 
-        log_msg("\n" + "-" * 60 + "\n\n\nBeginning download process...", logger, echo_console=echo_only_if_no_console_handler(False))
+        log_msg("-" * 60 + "\n\n", logger, echo_console=verbose)
+        log_msg("Beginning download process...\n\n", logger, echo_console=verbose, force=True)
+        log_msg( "-" * 60, logger, echo_console=verbose)
+
         orchestrate_cds_downloads(
             session=session,
             filename_base=filename_base,
+            save_dir=save_path,
             successful_downloads=successful,
             failed_downloads=failed,
             skipped_downloads=skipped,
             logger=logger,
-            echo_console=echo_only_if_no_console_handler(False),  # internal steps won’t echo in non-verbose
+            echo_console=verbose,  # internal steps won’t echo in non-verbose
             allow_prompts=(run_mode == "interactive"),
         )
 
         # Final counts — treat as summary (echo in non-verbose)
-        log_msg("-" * 60, logger, echo_console=echo_only_if_no_console_handler(True))
-        log_msg("Download process completed.", logger, echo_console=echo_only_if_no_console_handler(True))
-        log_msg(f"Successful : {len(successful)}", logger, echo_console=echo_only_if_no_console_handler(True))
-        log_msg(f"Skipped    : {len(skipped)}", logger, echo_console=echo_only_if_no_console_handler(True))
-        log_msg(f"Failed     : {len(failed)}", logger, echo_console=echo_only_if_no_console_handler(True))
-        log_msg("-" * 60, logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg("-" * 60, logger, echo_console=verbose, force=True)
+        log_msg("Download process completed.", logger, echo_console=verbose, force=True)
+        log_msg(f"\tSuccessful : {len(successful)}", logger, echo_console=verbose, force=True)
+        log_msg(f"\tSkipped    : {len(skipped)}", logger, echo_console=verbose, force=True)
+        log_msg(f"\tFailed     : {len(failed)}", logger, echo_console=verbose, force=True)
+        log_msg("-" * 60, logger, echo_console=verbose, force=True)
 
         if failed:
             log_msg("Some downloads failed. Review logs for details.",
-                    logger, level="warning", echo_console=echo_only_if_no_console_handler(True))
+                    logger=logger, level="warning", echo_console=verbose, force=True)
             create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
-            log_msg(msg="\nProgram ended, goodbye.\n\n", logger=logger, echo_console=echo_only_if_no_console_handler(False))
+            log_msg("", logger=logger, echo_console=verbose)
+            log_msg(msg="*"*60, logger=logger, echo_console=verbose)
+            log_msg(msg="Program ended, goodbye.", logger=logger, echo_console=verbose, force=True)
+            log_msg(msg="*"*60 + "\n\n", logger=logger, echo_console=verbose)
             return 2
         create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
-        log_msg(msg="*"*60 + "\nProgram completed, thank you for using this tool. Goodbye!\n" + "*"*60 + "\n\n", logger=logger, echo_console=echo_only_if_no_console_handler(False))
-
+        log_msg("", logger=logger, echo_console=verbose)
+        log_msg(msg="*"*60, logger=logger, echo_console=verbose)
+        log_msg("Program completed, thank you for using this tool. Goodbye!",logger=logger, echo_console=verbose, force=True)
+        log_msg(msg="*"*60+ "\n\n", logger=logger, echo_console=verbose)
 
     except Exception as e:
         # Always echo errors in non-verbose mode
-        log_msg(f"Run failed with exception: {e}", logger, level="exception", echo_console=echo_only_if_no_console_handler(True))
-        coord_str = format_coordinates_nwse(session.get("region_bounds"))
-        hash_str = generate_filename_hash(
-            dataset_short_name=session.get("dataset_short_name"),
-            variables=session.get("variables"),
-            boundaries=session.get("region_bounds"),
-        )
-        filename_base = f"{session.get('dataset_short_name')}_{coord_str}_{hash_str}"
-        create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
-        log_msg("\nProgram ended, goodbye.\n\n", logger, echo_console=echo_only_if_no_console_handler(True))
+        log_msg(f"Run failed with exception: {e}", logger=logger, level="exception", echo_console=verbose, force=True)
+        if session is not None and session.get("region_bounds") and session.get("dataset_short_name"):
+
+            coord_str = format_coordinates_nwse(boundaries=session.get(key="region_bounds"))
+            hash_str = generate_filename_hash(
+                dataset_short_name=session.get("dataset_short_name"),
+                variables=session.get("variables"),
+                boundaries=session.get("region_bounds"),
+            )
+            filename_base = f"{session.get('dataset_short_name')}_{coord_str}_{hash_str}"
+            create_final_log_file(session, filename_base, logger, delete_original=True, reattach_to_final=True)
+        else:
+            create_final_log_file(session=None, filename_base="run_failed_early",  logger=logger, delete_original=True, reattach_to_final=True)
+        log_msg("\nProgram ended, goodbye.\n\n", logger=logger, echo_console=verbose, force=True)
         return 1
 
 

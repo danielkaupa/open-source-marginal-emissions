@@ -43,12 +43,13 @@ Typically invoked through the CLI command: `osme-weather` or `wdr`.
 # FUNCTION IMPORTS
 # ----------------------------------------------
 
+from tabnanny import verbose
 from weather_data_retrieval.io.cli import parse_args, run_prompt_wizard
 from weather_data_retrieval.io.config_loader import load_and_validate_config
 from weather_data_retrieval.utils.session_management import SessionState
 from weather_data_retrieval.runner import run
 from weather_data_retrieval.utils.logging import setup_logger, log_msg
-from osme_common.paths import data_dir
+from osme_common.paths import data_dir, log_dir
 
 # ----------------------------------------------
 # CONSTANTS AND SHARED VARIABLES
@@ -77,10 +78,16 @@ def main():
     session = SessionState()
 
     run_mode = "automatic" if args.config else "interactive"
-    verbose = bool(args.verbose) if run_mode == "automatic" else True  # interactive is always verbose
+    if run_mode == "automatic":
+        # default False, opt-in via --verbose
+        verbose = bool(args.verbose)
+    else:
+        # default True, opt-out via --quiet
+        verbose = not bool(args.quiet)
 
-    # Initialize logger (console handler is attached when interactive or verbose)
-    logger = setup_logger(str(data_dir(create=True)), run_mode=run_mode, verbose=verbose)
+    # Initialize logger in logs/weather_data_retrieval (or $OSME_LOG_DIR/weather_data_retrieval)
+    package_log_dir = log_dir(create=True) / "weather_data_retrieval"
+    logger = setup_logger(str(package_log_dir), run_mode=run_mode, verbose=verbose)
 
     try:
         if run_mode == "automatic":
@@ -88,20 +95,18 @@ def main():
             exit_code = run(config, run_mode=run_mode, verbose=verbose, logger=logger)
         else:
             # Wizard handles its own console echo; we still attach console handler via verbose=True above
-            completed = run_prompt_wizard(session, logger=logger)
+            completed = run_prompt_wizard(session=session, logger=logger)
             if not completed:
                 return
             config = session.to_dict()
-            exit_code = run(config, run_mode=run_mode, verbose=True, logger=logger)
+            exit_code = run(config, run_mode=run_mode, verbose=verbose, logger=logger)
 
         # No extra print logic here; runner handles final summary echoing
 
     except Exception as e:
         # Runner also handles exceptions; this is just a fallback
         if logger:
-            logger.exception(f"Critical error: {e}")
-        else:
-            print(f"Critical error: {e}")
+            log_msg(f"Critical error: {e}", logger, level="exception", echo_console=True, force=True)
 
 if __name__ == "__main__":
     main()

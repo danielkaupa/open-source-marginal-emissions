@@ -35,7 +35,6 @@ from weather_data_retrieval.io.prompts import (
     prompt_dataset_short_name,
     prompt_cds_url,
     prompt_cds_api_key,
-    prompt_save_directory,
     prompt_date_range,
     prompt_coordinates,
     prompt_variables,
@@ -47,7 +46,6 @@ from weather_data_retrieval.io.prompts import (
 from weather_data_retrieval.utils.data_validation import (
     validate_cds_api_key,
     invalid_era5_world_variables,
-    default_save_dir,  # assuming this exists in your codebase as per your usage
     invalid_era5_land_variables,
     # invalid_open_meteo_variables
 )
@@ -59,7 +57,7 @@ from weather_data_retrieval.utils.logging import log_msg
 # CONSTANTS AND SHARED VARIABLES
 # ----------------------------------------------
 
-# N/A
+ECHO = True
 
 # ----------------------------------------------
 # FUNCTION DEFINITIONS
@@ -89,15 +87,16 @@ def parse_args() -> argparse.Namespace:
         help="Path to JSON config file. If provided, runs in non-interactive (automatic) mode."
     )
     p.add_argument(
-        "--log-dir",
-        default=None,
-        help="Directory where logs will be written (file name is auto-generated)."
-    )
-    p.add_argument(
         "--verbose",
         action="store_true",
         help="Automatic mode only: also echo log messages to console and show a prompt-style transcript (no input)."
     )
+    p.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Interactive mode only: suppress console echo (logs still written to file)."
+    )
+
     return p.parse_args()
 
 
@@ -122,13 +121,12 @@ def run_prompt_wizard(
         True if completed; False if exited early.
     """
 
-    log_msg("\n\n" + "=" * 60, logger)
-    log_msg("Welcome to the Weather Data Retrieval Prompt Wizard!\n" + "="*60, logger)
-    log_msg("\nPlease follow the prompts to configure your data retrieval settings.\n", logger)
-    log_msg("At any point, you may type:\n   'back' to return to the previous prompt.", logger)
-    log_msg("   'exit' to quit the wizard\n   'Ctrl+C' to stop the program.\n", logger)
-    log_msg("=" * 60 + "\n", logger)
-
+    log_msg("\n\n" + "=" * 60, logger, echo_console=ECHO)
+    log_msg("Welcome to the Weather Data Retrieval Prompt Wizard!\n" + "="*60, logger, echo_console=ECHO)
+    log_msg("\nPlease follow the prompts to configure your data retrieval settings.\n", logger, echo_console=ECHO)
+    log_msg("At any point, you may type:\n   'back' to return to the previous prompt.", logger, echo_console=ECHO)
+    log_msg("   'exit' to quit the wizard\n   'Ctrl+C' to stop the program.\n", logger, echo_console=ECHO)
+    log_msg("=" * 60 + "\n", logger, echo_console=ECHO)
 
     while True:
         key = session.first_unfilled_key()
@@ -136,13 +134,13 @@ def run_prompt_wizard(
             return True
 
         if key == "data_provider":
-            res = prompt_data_provider(session, logger=logger)
+            res = prompt_data_provider(session, logger=logger, echo_console=ECHO)
             if res == "__EXIT__": return False
             if res == "__BACK__": continue
 
         elif key == "dataset_short_name":
             provider = session.get("data_provider")
-            res = prompt_dataset_short_name(session, provider, logger=logger)
+            res = prompt_dataset_short_name(session, provider, logger=logger, echo_console=ECHO)
             if res == "__EXIT__": return False
             if res == "__BACK__":
                 session.unset("data_provider")
@@ -151,22 +149,22 @@ def run_prompt_wizard(
         # CDS-specific prompts
         elif session.get("data_provider") == "cds":
             if key == "api_url":
-                res_url = prompt_cds_url(session, "https://cds.climate.copernicus.eu/api", logger=logger)
+                res_url = prompt_cds_url(session, "https://cds.climate.copernicus.eu/api", logger=logger, echo_console=ECHO)
                 if res_url == "__EXIT__": return False
                 if res_url == "__BACK__":
                     session.unset("dataset_short_name")
                     continue
 
             elif key == "api_key":
-                res_key = prompt_cds_api_key(session, logger=logger)
+                res_key = prompt_cds_api_key(session, logger=logger, echo_console=ECHO)
                 if res_key == "__EXIT__": return False
                 if res_key == "__BACK__":
                     session.unset("api_url")
                     continue
 
-                client = validate_cds_api_key(session.get("api_url"), session.get("api_key"), logger=logger)
+                client = validate_cds_api_key(session.get("api_url"), session.get("api_key"), logger=logger, echo_console=ECHO)
                 if client is None:
-                    log_msg("Authentication failed. Please re-enter your API details.\n", logger)
+                    log_msg("Authentication failed. Please re-enter your API details.\n", logger, echo_console=ECHO)
                     session.unset("api_key")
                     session.unset("api_url")
                     continue
@@ -176,28 +174,12 @@ def run_prompt_wizard(
         elif session.get("data_provider") == "open-meteo":
             raise NotImplementedError("Open-Meteo variable validation not yet implemented.")
 
-        if key == "save_dir":
-            raw_save_path = prompt_save_directory(session, default_save_dir, logger=logger)
-            if raw_save_path in ("__EXIT__", "__BACK__"):
-                if raw_save_path == "__BACK__":
-                    session.unset("session_client")
-                    session.unset("api_key")
-                    continue
-                return False
-
-            # Normalize and resolve path safely
-            resolved_path = resolve_under(data_dir(create=True), raw_save_path)
-            session.set("save_dir", str(resolved_path))
-            log_msg(f"Save directory resolved to: {resolved_path}", logger)
-            continue
-
-
         elif key == "start_date":
             # This prompt sets BOTH start_date and end_date
-            s, e = prompt_date_range(session, logger=logger)
+            s, e = prompt_date_range(session, logger=logger, echo_console=ECHO)
             if s == "__EXIT__": return False
             if s == "__BACK__":
-                session.unset("save_dir")
+                session.unset("dataset_short_name")
                 continue
 
         elif key == "end_date":
@@ -205,7 +187,7 @@ def run_prompt_wizard(
             continue
 
         elif key == "region_bounds":
-            bounds = prompt_coordinates(session, logger=logger)
+            bounds = prompt_coordinates(session, logger=logger, echo_console=ECHO)
             if bounds == "__EXIT__": return False
             if bounds == "__BACK__":
                 session.unset("start_date")
@@ -219,7 +201,7 @@ def run_prompt_wizard(
                 invalid_vars = invalid_era5_land_variables
             else:
                 raise ValueError("Unknown dataset for variable validation.")
-            variables = prompt_variables(session, invalid_vars, logger=logger)
+            variables = prompt_variables(session, invalid_vars, logger=logger, echo_console=ECHO)
             if variables in ("__EXIT__", "__BACK__"):
                 if variables == "__BACK__":
                     session.unset("region_bounds")
@@ -227,7 +209,7 @@ def run_prompt_wizard(
                 return False
 
         elif key == "existing_file_action":
-            efa = prompt_skip_overwrite_files(session, logger=logger)
+            efa = prompt_skip_overwrite_files(session, logger=logger, echo_console=ECHO)
             if efa in ("__EXIT__", "__BACK__"):
                 if efa == "__BACK__":
                     session.unset("variables")
@@ -235,7 +217,7 @@ def run_prompt_wizard(
                 return False
 
         elif key == "parallel_settings":
-            ps = prompt_parallelisation_settings(session, logger=logger)
+            ps = prompt_parallelisation_settings(session, logger=logger, echo_console=ECHO)
             if ps in ("__EXIT__", "__BACK__"):
                 if ps == "__BACK__":
                     session.unset("existing_file_action")
@@ -243,7 +225,7 @@ def run_prompt_wizard(
                 return False
 
         elif key == "retry_settings":
-            rs = prompt_retry_settings(session, logger=logger)
+            rs = prompt_retry_settings(session, logger=logger, echo_console=ECHO)
             if rs in ("__EXIT__", "__BACK__"):
                 if rs == "__BACK__":
                     session.unset("parallel_settings")
@@ -251,13 +233,13 @@ def run_prompt_wizard(
                 return False
 
         elif key == "inputs_confirmed":
-            log_msg("\n" + "*" * 60 + "\n" + "*" * 60 + "\n", logger)
-            log_msg("\nPrompting wizard complete. Please review your selections:\n", logger)
-            rs = prompt_continue_confirmation(session=session, logger=logger)
+            log_msg("\n" + "*" * 60 + "\n" + "*" * 60 + "\n", logger, echo_console=ECHO)
+            log_msg("\nPrompting wizard complete. Please review your selections:\n", logger, echo_console=ECHO)
+            rs = prompt_continue_confirmation(session=session, logger=logger, echo_console=ECHO)
             if rs in ("__EXIT__", "__BACK__"):
                 if rs == "__BACK__":
                     session.unset("parallel_settings")
                     continue
                 return False
             session.set("inputs_confirmed", True)
-            log_msg("\nSelections confirmed.", logger)
+            log_msg("\nSelections confirmed.", logger, echo_console=ECHO)

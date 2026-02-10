@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime
 import os
+import shutil
 import time
 from time import perf_counter
 from typing import Optional, Tuple, List
@@ -50,6 +51,10 @@ from osme_common.paths import data_dir, resolve_under
 from weather_data_retrieval.utils.file_management import (
     find_existing_month_file,
     expected_save_path,
+    expected_save_stem,
+    is_zip_file,
+    is_grib_file,
+    unpack_zip_to_grib,
 )
 from weather_data_retrieval.io.prompts import read_input
 from weather_data_retrieval.utils.logging import log_msg
@@ -71,6 +76,7 @@ def prepare_cds_download(
     filename_base: str,
     year: int,
     month: int,
+    save_dir: Path,
     *,
     logger,
     echo_console: bool,
@@ -90,6 +96,8 @@ def prepare_cds_download(
         Year of the data to download.
     month : int
         Month of the data to download.
+    save_dir : Path
+        Directory to save downloaded files.
     logger : logging.Logger, optional
         Logger for logging messages.
     echo_console : bool
@@ -106,14 +114,13 @@ def prepare_cds_download(
         save_path: Full path for the target file.
     """
     cfg = get_cds_dataset_config(session, dataset_config_mapping)
-    data_file_format = cfg.get("data_download_format", "grib")
+    # Keep request format, but do not trust it for the delivered container type.
+    # We will normalize ZIP vs GRIB after download.
+    _ = cfg.get("data_download_format", "grib")
 
-    # Resolve base save directory
-    raw_save_dir = session.get("save_dir") or data_dir(create=True)
-    save_dir = resolve_under(data_dir(create=True), raw_save_dir)
-
-    # Construct canonical save path
-    save_path = expected_save_path(save_dir, filename_base, year, month, data_file_format)
+    # Canonical final output is always .grib (actual content will be normalized after download)
+    save_stem = expected_save_stem(save_dir, filename_base, year, month)
+    save_path = save_stem.with_suffix(".grib")
     policy = session.get("existing_file_action") or "case_by_case"
     download = True
 
@@ -206,7 +213,7 @@ def execute_cds_download(
     times = cfg.get("default_times", [f"{h:02d}:00" for h in range(24)])
 
     variables = session.get("variables")
-    grid_area = session.get("region_bounds")
+    grid_area = session.get(key="region_bounds")
     cds_client_session = session.get("session_client")
     if cds_client_session is None:
         raise ValueError("CDS client not initialized in session")
@@ -220,6 +227,13 @@ def execute_cds_download(
     for attempt in range(1, max_retries + 1):
         try:
             log_msg(f"\tAttempt {attempt} of {max_retries} for {year}-{month:02d}...", logger, echo_console=echo_console)
+            final_path = Path(save_path)
+            tmp_path = final_path.with_suffix(".download")  # neutral, no semantic extension
+
+            # Clear any stale temp file
+            if tmp_path.exists():
+                tmp_path.unlink()
+
             cds_client_session.retrieve(
                 dataset_product_name,
                 {
@@ -232,14 +246,32 @@ def execute_cds_download(
                     "area": grid_area,
                     "format": data_download_format,
                 },
-                str(save_path),
+                str(tmp_path),
             )
+            # Normalize payload to real GRIB at final_path
+            if is_zip_file(tmp_path):
+                log_msg(
+                    f"\tDownloaded payload is ZIP; extracting to: {final_path.name}",
+                    logger,
+                    echo_console=echo_console,
+                )
+                unpack_zip_to_grib(tmp_path, final_path)
+                tmp_path.unlink(missing_ok=True)
+            elif is_grib_file(tmp_path):
+                if final_path.exists():
+                    final_path.unlink()
+                shutil.move(str(tmp_path), str(final_path))
+            else:
+                # Preserve tmp file for debugging
+                raise RuntimeError(
+                    f"Downloaded payload is neither ZIP nor GRIB: {tmp_path}"
+                )
             elapsed = time.time() - month_start
-            log_msg(f"SUCCESS: {year}-{month:02d} in {format_duration(elapsed)}", logger, echo_console=echo_console)
+            log_msg(f"SUCCESS: Downloaded {year}-{month:02d} in {format_duration(elapsed)}", logger, echo_console=echo_console, force=True)
             return (year, month, "success")
 
         except Exception as e:
-            log_msg(f"WARNING: Attempt {attempt} failed for {year}-{month:02d}: {e}", logger, level="warning", echo_console=echo_console)
+            log_msg(f"WARNING: Attempt {attempt} failed for {year}-{month:02d}: {e}", logger, level="warning", echo_console=echo_console, force=True)
             if attempt < max_retries:
                 log_msg(f"\tWaiting {retry_delay_sec} seconds before retrying...", logger, echo_console=echo_console)
                 time.sleep(retry_delay_sec)
@@ -255,7 +287,7 @@ def execute_cds_download(
                 except Exception as auth_e:
                     log_msg(f"\tRe-authentication failed: {auth_e}", logger, level="warning", echo_console=echo_console)
             else:
-                log_msg(f"FAILURE: all {max_retries} attempts failed for {year}-{month:02d}.", logger, level="error", echo_console=echo_console)
+                log_msg(f"FAILURE: all {max_retries} attempts failed for {year}-{month:02d}.", logger, level="error", echo_console=echo_console, force=True)
                 return (year, month, "failed")
 
 
@@ -264,6 +296,7 @@ def download_cds_month(
     filename_base: str,
     year: int,
     month: int,
+    save_dir: Path,
     *,
     logger,
     echo_console: bool,
@@ -291,6 +324,7 @@ def download_cds_month(
         filename_base=filename_base,
         year=year,
         month=month,
+        save_dir=save_dir,
         logger=logger,
         echo_console=echo_console,
         allow_prompts=allow_prompts,
@@ -321,6 +355,7 @@ def download_cds_month(
 def plan_cds_months(
     session: SessionState,
     filename_base: str,
+    save_dir : Path,
     *,
     logger,
     echo_console: bool,
@@ -335,6 +370,8 @@ def plan_cds_months(
         Session containing user configuration.
     filename_base : str
         Base filename (without date or extension).
+    save_dir : Path
+        Directory to save downloaded files.
     logger : logging.Logger, optional
         Logger for logging messages.
     echo_console : bool
@@ -352,7 +389,6 @@ def plan_cds_months(
 
     start_date = session.get("start_date")
     end_date = session.get("end_date")
-    save_dir = Path(session.get("save_dir"))
 
     s = datetime.strptime(start_date, "%Y-%m-%d")
     e = datetime.strptime(end_date, "%Y-%m-%d")
@@ -396,7 +432,9 @@ def plan_cds_months(
                 log_msg("Please enter 'y' or 'n'.", logger, echo_console=echo_console)
 
     # Report
-    log_msg("\n===> Checking for existing files...\n" + "-" * 60, logger, echo_console=echo_console)
+    log_msg("===> Checking for existing files...\n", logger, echo_console=echo_console)
+    log_msg("-" * 60, logger, echo_console=echo_console)
+
     if months_skipped:
         for y, m, p in months_skipped[:5]:
             log_msg(f"  - {y}-{m:02d}: {p}", logger, echo_console=echo_console)
@@ -411,6 +449,7 @@ def plan_cds_months(
 def orchestrate_cds_downloads(
         session: SessionState,
         filename_base: str,
+        save_dir: Path,
         successful_downloads: list,
         failed_downloads: list,
         skipped_downloads: list,
@@ -427,6 +466,10 @@ def orchestrate_cds_downloads(
     ----------
     session : SessionState
         Session containing user configuration and authenticated client.
+    filename_base : str
+        Base filename (without date or extension).
+    save_dir : Path
+        Directory to save downloaded files.
     successful_downloads : list
         Mutable list to collect (year, month) tuples for successful downloads.
     failed_downloads : list
@@ -453,6 +496,7 @@ def orchestrate_cds_downloads(
     months_to_download, months_skipped = plan_cds_months(
         session=session,
         filename_base=filename_base,
+        save_dir=save_dir,
         logger=logger,
         echo_console=echo_console,
         allow_prompts=allow_prompts,
@@ -462,14 +506,18 @@ def orchestrate_cds_downloads(
         skipped_downloads.append((y, m))
 
     if not months_to_download:
-        log_msg("\nNothing to download (all months skipped).", logger, echo_console=echo_console)
+        log_msg("*" * 60, logger, echo_console=echo_console)
+        log_msg("*"*10 + "Nothing to download (all months skipped)."+ "*"*10, logger, echo_console=echo_console)
+        log_msg("*" * 60, logger, echo_console=echo_console)
         return
 
     parallel_conf = session.get("parallel_settings") or {"enabled": False, "max_concurrent": 1}
     t0 = perf_counter()
     if parallel_conf.get("enabled"):
         max_workers = max(2, int(parallel_conf.get("max_concurrent", 2)))
-        log_msg(f"\nParallelisation : Enabled -> Beginning download with [{max_workers}] concurrent tasks...\n" + "-" * 60, logger, echo_console=echo_console)
+        log_msg(f"Parallelisation : Enabled -> Beginning download with [{max_workers}] concurrent tasks...\n", logger, echo_console=echo_console)
+        log_msg(f"-" * 60, logger, echo_console=echo_console)
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             tasks = [
                 executor.submit(
@@ -478,6 +526,7 @@ def orchestrate_cds_downloads(
                     filename_base=filename_base,
                     year=y,
                     month=m,
+                    save_dir=save_dir,
                     logger=logger,
                     echo_console=echo_console,
                     allow_prompts=allow_prompts,
@@ -497,6 +546,7 @@ def orchestrate_cds_downloads(
                 filename_base=filename_base,
                 year=y,
                 month=m,
+                save_dir=save_dir,
                 logger=logger,
                 echo_console=echo_console,
                 allow_prompts=allow_prompts,

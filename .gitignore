@@ -210,6 +210,7 @@ __marimo__/
 # Large or derived files. Keep sources small & version text; use DVC/LFS for big.
 ################################################################################
 data/
+logs/
 # Common optional patterns (uncomment as needed):
 # datasets/
 # models/

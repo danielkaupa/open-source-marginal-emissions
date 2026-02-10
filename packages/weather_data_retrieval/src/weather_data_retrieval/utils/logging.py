@@ -77,9 +77,11 @@ def _format_duration(seconds: float) -> str:
     return f"{secs:.5f}s"
 
 
-def build_download_summary(session: Any,
-                           estimates: dict,
-                           speed_mbps: float) -> str:
+def build_download_summary(
+        session: Any,
+        estimates: dict,
+        speed_mbps: float,
+        save_dir: str | Path | None = None) -> str:
     """
     Construct a formatted summary string of the current download configuration.
 
@@ -105,7 +107,7 @@ def build_download_summary(session: Any,
         f"Dates: {session.get('start_date')} → {session.get('end_date')}\n"
         f"Area: {session.get('region_bounds')}\n"
         f"Variables: {session.get('variables')}\n"
-        f"Save Directory: {session.get('save_dir')}\n"
+        f"Save Directory: {save_dir if save_dir is not None else '(auto)'}\n"
         f"Retries: {session.get('retry_settings')}\n"
         f"Parallelisation: {session.get('parallel_settings')}\n\n"
         f"----------------------------------------\n\n"
@@ -166,17 +168,17 @@ def setup_logger(
     fh.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
     logger.addHandler(fh)
 
-    # Console handler:
-    # - interactive: always show console at INFO+
-    # - automatic: show console only if verbose=True
-    add_console = (run_mode == "interactive") or (run_mode == "automatic" and verbose)
-    if add_console:
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)   # <- no DEBUG on console, so prompts won't duplicate
-        ch.setFormatter(logging.Formatter("%(message)s"))
-        logger.addHandler(ch)
+    # # Console handler:
+    # # - interactive: always show console at INFO+
+    # # - automatic: show console only if verbose=True
+    # add_console = (run_mode == "interactive") or (run_mode == "automatic" and verbose)
+    # if add_console:
+    #     ch = logging.StreamHandler()
+    #     ch.setLevel(logging.INFO)   # <- no DEBUG on console, so prompts won't duplicate
+    #     ch.setFormatter(logging.Formatter("%(message)s"))
+    #     logger.addHandler(ch)
 
-    logger.info(f"Logging initialized at {log_path}")
+    # logger.info(f"Logging initialized at {log_path}")
     return logger
 
 
@@ -185,28 +187,20 @@ def log_msg(
         logger,
         *,
         level: str = "info",
-        echo_console: bool = False
+        echo_console: bool = False,
+        force: bool = False,
         ) -> None:
     """
     Unified logging utility.
     - Always logs to file.
-    - Echo to console (via tqdm.write) only in interactive mode.
+    - Optionally echoes to console via tqdm.write.
 
     Parameters
     ----------
-    msg : str
-        Message to log.
-    logger : logging.Logger
-        Logger instance.
-    level : str, optional
-        Logging level: 'info', 'warning', 'error', 'exception', by default "info".
-    echo_console : bool, optional
-        Whether to also echo to console, by default False.
-
-    Returns
-    -------
-    None
-
+    echo_console:
+        Print to console when True (used for verbose mode).
+    force:
+        Print to console regardless of echo_console (used for summaries/errors).
     """
     if not logger:
         raise ValueError("Logger instance must be provided to log_msg().")
@@ -214,8 +208,9 @@ def log_msg(
     log_fn = getattr(logger, level, logger.info)
     log_fn(msg)
 
-    if echo_console:
+    if force or echo_console:
         tqdm.write(s=msg)
+
 
 
 def create_final_log_file(
@@ -262,15 +257,15 @@ def create_final_log_file(
     original_path = Path(fh.baseFilename)
 
     # 2) build final path
-    save_dir_raw = session.get("save_dir")
-    save_dir = resolve_under(data_dir(create=True), save_dir_raw) if save_dir_raw else data_dir(create=True)
+    log_base = log_dir(create=True) / "weather_data_retrieval"
+    log_base.mkdir(parents=True, exist_ok=True)
 
     start = session.get("start_date")
     end = session.get("end_date")
     retrieved = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
 
     final_name = f"{filename_base}_{start}-{end}_retrieved-{retrieved}.log"
-    final_path = save_dir / final_name
+    final_path = log_base / final_name
     final_path.parent.mkdir(parents=True, exist_ok=True)
 
     # 3) flush & close the original handler, detach from logger

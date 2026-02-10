@@ -22,8 +22,12 @@
 # LIBRARY IMPORTS
 # ----------------------------------------------
 
+from __future__ import annotations
+
 import re
 import hashlib
+import shutil
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -39,7 +43,8 @@ from osme_common.paths import data_dir, resolve_under
 # CONSTANTS AND SHARED VARIABLES
 # ----------------------------------------------
 
-# N/A
+ZIP_MAGIC = b"PK\x03\x04"
+GRIB_MAGIC = b"GRIB"
 
 # ----------------------------------------------
 # FUNCTION DEFINITIONS
@@ -311,6 +316,32 @@ def estimate_cds_download(
         "total_time_sec": round(number=total_time_sec, ndigits=1),
     }
 
+def expected_save_stem(
+        save_dir: str | Path | None,
+        filename_base: str,
+        year: int,
+        month: int,
+        ) -> Path:
+    """
+    Construct canonical save stem (without extension) for monthly data.
+
+    Parameters
+    ----------
+    save_dir : str | Path | None
+        Base directory for saving. If None, defaults to osme_common.paths.data_dir().
+    filename_base : str
+        Base name without date or extension.
+    year, month : int
+        Year and month of the file.
+
+    Returns
+    -------
+    Path
+        Resolved path under the proper data directory.
+    """
+    base = Path(save_dir)
+    return base / f"{filename_base}_{year:04d}-{month:02d}"
+
 def expected_save_path(
         save_dir: str | Path | None,
         filename_base: str,
@@ -337,5 +368,103 @@ def expected_save_path(
     Path
         Resolved path under the proper data directory.
     """
-    base = resolve_under(data_dir(create=True), save_dir)
-    return base / f"{filename_base}_{year:04d}-{month:02d}.{data_format}"
+    return expected_save_stem(save_dir, filename_base, year, month).with_suffix(f".{data_format}")
+
+
+
+def is_zip_file(path: Path) -> bool:
+    """
+    Check if a file is a ZIP archive by reading its magic number.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the file to check.
+
+    Returns
+    -------
+    bool
+        True if the file is a ZIP archive, False otherwise.
+    """
+
+    try:
+        with path.open("rb") as f:
+            return f.read(4) == ZIP_MAGIC
+    except Exception:
+        return False
+
+
+def is_grib_file(path: Path) -> bool:
+    """
+    Check if a file is a GRIB file by reading its magic number.
+    GRIB files begin with ASCII bytes 'GRIB'.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the file to check.
+
+    Returns
+    -------
+    bool
+        True if the file is a GRIB file, False otherwise.
+    """
+    try:
+        with path.open("rb") as f:
+            return f.read(4) == GRIB_MAGIC
+    except Exception:
+        return False
+
+def unpack_zip_to_grib(
+        zip_path: Path,
+        final_grib_path: Path
+        ) -> Path:
+    """
+    Extract a ZIP and move the contained GRIB-like file to final_grib_path.
+    If multiple candidates exist, prefer .grib/.grb/.grib2; otherwise take the largest file.
+
+    Parameters
+    ----------
+    zip_path : Path
+        Path to the ZIP file.
+    final_grib_path : Path
+        Desired final path for the extracted GRIB file.
+
+    Returns
+    -------
+    Path
+        Path to the final GRIB file.
+
+    """
+    tmp_dir = zip_path.parent / (zip_path.stem + "_extract_tmp")
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir)
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        zf.extractall(tmp_dir)
+
+    files = [p for p in tmp_dir.rglob("*") if p.is_file()]
+    if not files:
+        raise RuntimeError(f"ZIP extracted but contained no files: {zip_path}")
+
+    # Prefer GRIB-like extensions
+    preferred_exts = {".grib", ".grb", ".grib2"}
+    candidates = [p for p in files if p.suffix.lower() in preferred_exts]
+
+    if len(candidates) == 1:
+        chosen = candidates[0]
+    elif len(candidates) > 1:
+        chosen = max(candidates, key=lambda p: p.stat().st_size)
+    else:
+        # Fallback: largest file
+        chosen = max(files, key=lambda p: p.stat().st_size)
+
+    final_grib_path.parent.mkdir(parents=True, exist_ok=True)
+    if final_grib_path.exists():
+        final_grib_path.unlink()
+
+    shutil.move(str(chosen), str(final_grib_path))
+
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+    return final_grib_path

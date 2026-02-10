@@ -335,7 +335,10 @@ def validate_data_provider(provider: str) -> bool:
 # 2 - DATASET NAME (dataset_short_name)
 def validate_dataset_short_name(
         dataset_short_name: str,
-        provider: str
+        provider: str,
+        * ,
+        logger=None,
+        echo_console: bool = False
         ) -> bool:
     """
     Check dataset compatibility with provider.
@@ -356,7 +359,7 @@ def validate_dataset_short_name(
         return dataset_short_name in CDS_DATASETS
     if provider == "open-meteo":
         raise NotImplementedError("Open-Meteo dataset validation not yet implemented.")
-    log_msg(f"Warning: Unknown provider '{provider}'.")
+    log_msg(f"Warning: Unknown provider '{provider}'.", logger=logger, level="warning", echo_console=echo_console, force=True)
     return False
 
 
@@ -389,14 +392,14 @@ def validate_cds_api_key(
     """
 
     if logger:
-        log_msg("Testing CDS API connection with provided credentials...", logger, level="info")
+        log_msg("Testing CDS API connection with provided credentials...", logger, level="info", echo_console=echo_console)
 
     # 1) Initialize client
     try:
         client = cdsapi.Client(url=url, key=key, quiet=True, timeout=30)
     except Exception as e:
         if logger:
-            log_msg(f"\tFailed to initialize CDS client: {e}", logger, level="warning")
+            log_msg(f"\tFailed to initialize CDS client: {e}", logger, level="warning", echo_console=echo_console, force=True)
         return None
 
     # 2) Probe using the predefined payload (normalize keys minimally)
@@ -413,28 +416,28 @@ def validate_cds_api_key(
         tmp_path = Path(tempfile.gettempdir()) / f"cds_probe_{os.getpid()}_{int(datetime.now().timestamp())}.grib"
 
         if logger:
-            log_msg("\tProbing ERA5 permissions with a minimal retrieve...", logger)
+            log_msg("\tProbing ERA5 permissions with a minimal retrieve...", logger, echo_console=echo_console)
             request_items = ""
             for k, v in request.items():
                 request_items += f"\n\t   {k}: {v}"
-            log_msg(f"\tRequest details: dataset='{dataset}' {request_items}", logger)
-
+            log_msg(f"\tRequest details: dataset='{dataset}' {request_items}", logger, echo_console=echo_console)
         client.retrieve(dataset, request, target=str(tmp_path))
 
         if logger:
-            log_msg("\tPermission probe succeeded.\n", logger)
+            log_msg("\tPermission probe succeeded.\n", logger, echo_console=echo_console, force=True)
         return client
 
     except Exception as e:
         msg = str(e)
         if logger:
-            log_msg(f"\tAuthentication/probe failed: {msg}\n", logger, level="warning")
+            log_msg(f"\tAuthentication/probe failed: {msg}\n", logger, level="warning", echo_console=echo_console, force=True)
             if "401" in msg or "Unauthorized" in msg or "operation not allowed" in msg:
                 log_msg(
                     f"\tCDS returned 401/Unauthorized. This usually means you haven’t accepted the "
                     f"licence for '{test_payload.get('dataset','(unknown)')}'. Please log into the CDS website and accept it.\n",
                     logger,
                     level="warning",
+                    echo_console=echo_console,
                 )
         return None
     finally:
@@ -473,7 +476,10 @@ def validate_directory(path: str) -> bool:
 # 6 & 7 - START & END DATE (start_date, end_date)
 def validate_date(
         value: str,
-        allow_month_only: bool = False
+        allow_month_only: bool = False,
+        *,
+        logger = None,
+        echo_console: bool = False,
         ) -> bool:
     """
     Validate date format as YYYY-MM-DD or optionally YYYY-MM.
@@ -501,7 +507,7 @@ def validate_date(
                 datetime.strptime(value, "%Y-%m")
                 return True
             except ValueError:
-                log_msg(f"Invalid date format '{value}'. Expected YYYY-MM-DD or YYYY-MM.\n")
+                log_msg(f"Invalid date format '{value}'. Expected YYYY-MM-DD or YYYY-MM.\n", logger=logger, level="warning", echo_console=echo_console, force=True)
                 return False
         return False
 
@@ -557,7 +563,12 @@ def parse_date_with_defaults(
 
 
 # 7 - END DATE (end_date)
-def clamp_era5_available_end_date(end: datetime) -> datetime:
+def clamp_era5_available_end_date(
+        end: datetime,
+        *,
+        logger = None,
+        echo_console: bool = False
+        ) -> datetime:
     """
     Clamp end date to ERA5 data availability boundary (8 days ago).
 
@@ -577,7 +588,7 @@ def clamp_era5_available_end_date(end: datetime) -> datetime:
     EIGHT_DAY_LAG = 8
     upper = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=EIGHT_DAY_LAG)
     if end > upper:
-        log_msg(f"Adjusting end date from {end.date()} to data availability boundary {upper.date()} (−{EIGHT_DAY_LAG} days).")
+        log_msg(f"Adjusting end date from {end.date()} to data availability boundary {upper.date()} (−{EIGHT_DAY_LAG} days).", logger=logger, level="warning", echo_console=echo_console)
         return upper
     return end
 
@@ -816,7 +827,6 @@ def _validate_common(
     _require_keys(config, [
         "data_provider",
         "dataset_short_name",
-        "save_dir",
         "start_date",
         "end_date",
         "region_bounds",
@@ -832,19 +842,11 @@ def _validate_common(
     if not validate_dataset_short_name(config["dataset_short_name"], config["data_provider"]):
         raise ValueError("Invalid dataset short name")
 
-    # Save dir
-    p = resolve_under(data_dir(create=True), config["save_dir"])
-    try:
-        p.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        raise ValueError(f"Cannot create/access save_dir '{p}': {e}")
-    config["save_dir"] = str(p)
-
     # Dates (normalize to YYYY-MM-DD; end > start; CDS clamping handled later)
     s_raw, e_raw = config["start_date"], config["end_date"]
-    if not validate_date(s_raw, allow_month_only=True):
+    if not validate_date(s_raw, allow_month_only=True, logger=logger, echo_console=echo_console):
         raise ValueError("Invalid start_date format; use YYYY-MM-DD or YYYY-MM")
-    if not validate_date(e_raw, allow_month_only=True):
+    if not validate_date(e_raw, allow_month_only=True, logger=logger, echo_console=echo_console):
         raise ValueError("Invalid end_date format; use YYYY-MM-DD or YYYY-MM")
     s_dt, s_iso = parse_date_with_defaults(s_raw, default_to_month_end=False)
     e_dt, e_iso = parse_date_with_defaults(e_raw, default_to_month_end=True)
@@ -956,7 +958,7 @@ def _validate_cds(
     # (Only if you want to clamp at config-time; otherwise you can clamp at runtime)
     from datetime import datetime
     e_dt = datetime.strptime(config["end_date"], "%Y-%m-%d")
-    e_clamped = clamp_era5_available_end_date(e_dt)
+    e_clamped = clamp_era5_available_end_date(e_dt, logger=logger, echo_console=echo_console)
     if e_clamped.date().isoformat() != config["end_date"]:
         log_msg(
             f"End date clamped from {config['end_date']} to {e_clamped.date().isoformat()} for ERA5 availability.",
@@ -967,7 +969,7 @@ def _validate_cds(
     # live auth check (off by default)
     if live_auth_check:
         from weather_data_retrieval.utils.data_validation import validate_cds_api_key
-        client = validate_cds_api_key(config["api_url"], config["api_key"], logger=logger, run_mode=run_mode)
+        client = validate_cds_api_key(config["api_url"], config["api_key"], logger=logger, echo_console=echo_console)
         if client is None:
             raise ValueError("CDS authentication failed with provided api_url/api_key")
 
