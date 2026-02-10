@@ -51,10 +51,10 @@ The top-level modules are packaged for long-term maintainability and distributed
 ### Module Overview
 | Module | Description | Status |
 |--------|-------------|--------|
-| **[weather_data_retrieval](./osme-weather-data-retrieval-documentation/)**       | Fully packaged CLI + batch utilities to download ERA5 and ERA5-Land data from ECMWF CDS. Open-Meteo under development                          | ✅ Available Now      |
-| **[grid_data_retrieval](./osme-grid-data-retrieval-documentation/)**          | CLI + batch utilities to download demand, generation, and emissions data from public grid sources.                                   | 🚧 Under Development |
-| **[data_cleaning_and_joining](./osme-data-cleaning-and-joining-documentation/)**    | Spatial alignment, temporal resampling, and integration of grid + weather datasets with memory-efficient formats. | 🚧 Under Development |
-| **[marginal_emissions_modelling](./osme-marginal-emissions-modelling-documentation/)** | Methods for estimating MEFs and evaluating models. Designed to accommodate several modelling approaches.          | 🚧 Under Development |
+| **[weather_data_retrieval](packages/weather-data-retrieval/docs/index.md)**       | Fully packaged CLI + batch utilities to download ERA5 and ERA5-Land data from ECMWF CDS. Open-Meteo under development                          | ✅ Available Now      |
+| **[grid_data_retrieval]((packages/grid_data_retrieval/docs/index.md)**          | CLI + batch utilities to download demand, generation, and emissions data from public grid sources.                                   | 🚧 Under Development |
+| **[data_cleaning_and_joining](packages/data_cleaning_and_joining/docs/index.md)**    | Spatial alignment, temporal resampling, and integration of grid + weather datasets with memory-efficient formats. | 🚧 Under Development |
+| **[marginal_emissions_modelling](packages/marginal_emissions_modelling/docs/index.md)** | Methods for estimating MEFs and evaluating models. Designed to accommodate several modelling approaches.          | 🚧 Under Development |
 
 <br>
 
