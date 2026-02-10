@@ -2,7 +2,7 @@
   "data_provider": "cds",
   "dataset_short_name": "era5-land",
   "api_url": "https://cds.climate.copernicus.eu/api",
-  "api_key": "3dabbb79-833a-4098-bff3-a2c59d43389d",
+  "api_key": "YOUR_API_KEY_HERE",
   "start_date": "2019-01",
   "end_date": "2019-06",
   "region_bounds": [38, 68.0, 36, 70.0],
