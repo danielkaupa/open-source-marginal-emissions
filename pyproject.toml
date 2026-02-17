@@ -143,14 +143,23 @@ osme-mem = "marginal_emissions_modelling.main:main"
 
 # Short aliases (optional but convenient)
 wdr = "weather_data_retrieval.main:main"
+
+# Grid Data Retrieval Entry Points
 gdr = "grid_data_retrieval.main:main"
 
+# Grid Data Processing Entry Points
 process-grid-data = "grid_data_processing.runner:run_pipeline"
 gdp = "grid_data_processing.runner:run_pipeline"
 griddataprocessing = "grid_data_processing.runner:run_pipeline"
 gridprocessing = "grid_data_processing.runner:run_pipeline"
 gridproc = "grid_data_processing.runner:run_pipeline"
 
+# Weather data processing entry points
+process-weather-data = "weather_data_processing.runner:run_pipeline"
+pwd = "weather_data_processing.runner:run_pipeline"
+weatherdataprocessing = "weather_data_processing.runner:run_pipeline"
+weatherprocessing = "weather_data_processing.runner:run_pipeline"
+weaproc = "weather_data_processing.runner:run_pipeline"
 
 dcaj = "data_cleaning_and_joining.main:main"
 mem = "marginal_emissions_modelling.main:main"

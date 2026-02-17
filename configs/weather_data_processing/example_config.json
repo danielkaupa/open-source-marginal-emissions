@@ -1,0 +1,66 @@
+{
+  "parallelization": {
+    "mode": "auto",
+    "manual_workers": null,
+    "prefer_mpi": true
+  },
+  "logging": {
+    "verbose": false,
+    "log_dir": "logs/weather_data_processing",
+    "log_level": "INFO"
+  },
+  "data_paths": {
+    "grib_dir": "data/era5-world/raw",
+    "output_base": "data/era5-world/processed",
+    "interim_dir": "data/era5-world/interim",
+    "processed_dir": "data/era5-world/processed"
+  },
+  "geographic": {
+    "boundary": {
+      "shapefile_adm0": "data/geoBoundaries/geoBoundariesCGAZ_ADM0.zip",
+      "shapefile_adm1": "data/geoBoundaries/geoBoundariesCGAZ_ADM1.zip",
+      "shapefile_adm2": "data/geoBoundaries/geoBoundariesCGAZ_ADM2.zip",
+      "country_name": "India",
+      "country_field": "shapeName"
+    },
+    "mask": {
+      "inclusion_mode": "combined",
+      "fraction_threshold": 0.8,
+      "dataset_prefix": "era5-world",
+      "mask_dir": "data/geoBoundaries/masks/era5-world",
+      "metadata_dir": "data/geoBoundaries/masks/mask_metadata",
+      "generate_visualization": true,
+      "image_dir": "data/geoBoundaries/images"
+    },
+    "adm_enrichment": {
+      "enable_adm1": true,
+      "enable_adm2": true,
+      "adm1_name_field": "shapeName",
+      "adm2_name_field": "shapeName",
+      "adm1_code_field": "shapeISO",
+      "adm2_code_field": "shapeISO",
+      "undefined_value": "NONE_DEFINED"
+    }
+  },
+  "temporal": {
+    "interpolation": {
+      "method": "rate_shaped",
+      "datetime_unit": "us",
+      "clamp_unit_range": true
+    },
+    "timezone": {
+      "target_timezone": "Asia/Kolkata",
+      "keep_utc_column": false
+    }
+  },
+  "aggregation": {
+    "spatial": {
+      "level": "ADM0",
+      "weight_by_area": true,
+      "output_format": "parquet"
+    },
+    "temporal": {
+      "modes": ["annual", "quarterly"]
+    }
+  }
+}

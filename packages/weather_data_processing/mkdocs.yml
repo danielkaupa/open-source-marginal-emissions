@@ -1,4 +1,4 @@
-site_name: Grid Data Processing - Documentation
+site_name: Weather Data Processing - Documentation
 site_description: Production pipeline for processing Indian national grid electricity data with progressive gap filling
 
 nav:
