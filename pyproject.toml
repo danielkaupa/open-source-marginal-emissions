@@ -144,6 +144,14 @@ osme-mem = "marginal_emissions_modelling.main:main"
 # Short aliases (optional but convenient)
 wdr = "weather_data_retrieval.main:main"
 gdr = "grid_data_retrieval.main:main"
+
+process-grid-data = "grid_data_processing.runner:run_pipeline"
+gdp = "grid_data_processing.runner:run_pipeline"
+griddataprocessing = "grid_data_processing.runner:run_pipeline"
+gridprocessing = "grid_data_processing.runner:run_pipeline"
+gridproc = "grid_data_processing.runner:run_pipeline"
+
+
 dcaj = "data_cleaning_and_joining.main:main"
 mem = "marginal_emissions_modelling.main:main"
 
@@ -157,6 +165,7 @@ packages = [
     "osme_common",
     "weather_data_retrieval",
     "grid_data_retrieval",
+    "grid_data_processing",
     "data_cleaning_and_joining",
     "marginal_emissions_modelling",
 ]
@@ -172,6 +181,7 @@ local_scheme = "node-and-date"
 osme_common = "packages/osme_common/src/osme_common"
 weather_data_retrieval = "packages/weather_data_retrieval/src/weather_data_retrieval"
 grid_data_retrieval = "packages/grid_data_retrieval/src/grid_data_retrieval"
+grid_data_processing = "packages/grid_data_processing/src/grid_data_processing"
 data_cleaning_and_joining = "packages/data_cleaning_and_joining/src/data_cleaning_and_joining"
 marginal_emissions_modelling = "packages/marginal_emissions_modelling/src/marginal_emissions_modelling"
 

@@ -1,0 +1,42 @@
+{
+  "data_frequency_minutes": 5,
+  "gap_filling": {
+    "short_gap_threshold_minutes": 80,
+    "ref_column": "demand_met",
+    "columns_to_fill": [
+      "thermal_generation",
+      "gas_generation",
+      "hydro_generation",
+      "nuclear_generation",
+      "renewable_generation",
+      "tons_co2",
+      "total_generation",
+      "demand_met",
+      "net_demand"
+    ],
+    "gradient": {
+      "max_search_days": 21,
+      "smooth_window_slots": 3,
+      "prefer_same_weekday": true
+    }
+  },
+  "aggregation": {
+    "target_interval_minutes": 30,
+    "avg_columns": [
+      "thermal_generation",
+      "gas_generation",
+      "hydro_generation",
+      "nuclear_generation",
+      "renewable_generation",
+      "total_generation",
+      "demand_met",
+      "net_demand",
+      "g_co2_per_kwh",
+      "tons_co2_per_mwh"
+    ],
+    "sum_columns": ["tons_co2"]
+  },
+  "timezone": {
+    "target": "Asia/Kolkata"
+  }
+}
