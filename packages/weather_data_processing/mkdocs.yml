@@ -1,0 +1,48 @@
+site_name: Grid Data Processing - Documentation
+site_description: Production pipeline for processing Indian national grid electricity data with progressive gap filling
+
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Codebase Reference: codebase.md
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            show_category_heading: true
+            separate_signature: true
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+      toc_depth: 2-3
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      linenums: false
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html

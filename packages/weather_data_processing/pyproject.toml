@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grid-data-processing"
+version = "1.0.0"
+description = "Production pipeline for processing Indian national grid electricity data"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["electricity", "grid", "emissions", "data-processing", "india"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "polars>=0.20.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0",
+    "python-dateutil>=2.8.0",
+    "osme-common",  # Internal dependency
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+# Primary entry point
+process-grid-data = "grid_data_processing.runner:run_pipeline"
+
+# Command aliases - all point to the same function
+gdp = "grid_data_processing.runner:run_pipeline"
+griddataprocessing = "grid_data_processing.runner:run_pipeline"
+gridprocessing = "grid_data_processing.runner:run_pipeline"
+gridproc = "grid_data_processing.runner:run_pipeline"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["grid_data_processing*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
