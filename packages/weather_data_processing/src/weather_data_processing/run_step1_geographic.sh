@@ -20,7 +20,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
-CONFIG_FILE=${CONFIG_FILE:-"configs/pipeline_config.json"}
+CONFIG_FILE=${CONFIG_FILE:-"configs/weather_data_processing/example_config.json"}
 
 # Optional: Specify mask files explicitly
 # (If not provided, auto-detected from Step 1 output)

@@ -146,42 +146,80 @@ class MaskBuilder:
     def _extract_grid_from_grib(self) -> pl.DataFrame:
         """
         Extract (lat, lon) grid from a sample GRIB file.
-        
+
         Returns
         -------
         pl.DataFrame
             DataFrame with columns: latitude, longitude
         """
         t0 = time.perf_counter()
-        
+
         # Find first GRIB file
         grib_files = sorted(self.grib_dir.glob("*.grib"))
         if not grib_files:
             raise FileNotFoundError(f"No GRIB files found in {self.grib_dir}")
-        
+
         sample_grib = grib_files[0]
         self.logger.info(f"Extracting grid from {sample_grib.name}")
-        
-        # Open with xarray (using first variable)
-        ds = xr.open_dataset(
-            sample_grib,
-            engine="cfgrib",
-            backend_kwargs={"indexpath": ""}
-        )
-        
-        # Get lat/lon grid
-        lon2d, lat2d = xr.broadcast(ds["longitude"], ds["latitude"])
-        
+
+        ds = None
+        try:
+            # Preferred: open grouped datasets (handles mixed metadata groups)
+            import cfgrib
+
+            datasets = cfgrib.open_datasets(
+                str(sample_grib),
+                backend_kwargs={"indexpath": ""}
+            )
+
+            if not datasets:
+                raise ValueError("cfgrib.open_datasets returned no datasets.")
+
+            # Pick first dataset containing both latitude and longitude
+            for cand in datasets:
+                if ("latitude" in cand.coords or "latitude" in cand.variables) and \
+                   ("longitude" in cand.coords or "longitude" in cand.variables):
+                    ds = cand
+                    break
+
+            if ds is None:
+                # Fallback: use first dataset anyway and fail clearly below if no coords
+                ds = datasets[0]
+
+        except Exception as e:
+            # Fallback to xarray open_dataset for simple files
+            self.logger.warning(
+                f"Grouped GRIB open failed ({e}); falling back to xarray.open_dataset"
+            )
+            ds = xr.open_dataset(
+                sample_grib,
+                engine="cfgrib",
+                backend_kwargs={"indexpath": ""}
+            )
+
+        # Normalize coordinate names (some files use lat/lon aliases)
+        lat_name = "latitude" if "latitude" in ds else ("lat" if "lat" in ds else None)
+        lon_name = "longitude" if "longitude" in ds else ("lon" if "lon" in ds else None)
+
+        if lat_name is None or lon_name is None:
+            ds.close()
+            raise ValueError(
+                f"Could not find latitude/longitude coordinates in GRIB dataset. "
+                f"Available coords: {list(ds.coords)}"
+            )
+
+        lon2d, lat2d = xr.broadcast(ds[lon_name], ds[lat_name])
+
         df = pl.DataFrame({
             "latitude": lat2d.values.ravel(),
             "longitude": lon2d.values.ravel()
         })
-        
+
         ds.close()
-        
+
         dt = time.perf_counter() - t0
         self.logger.info(f"  Extracted {len(df)} grid cells in {dt:.2f}s")
-        
+
         return df
     
     def _apply_mask(
