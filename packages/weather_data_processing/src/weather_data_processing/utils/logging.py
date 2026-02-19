@@ -1,3 +1,4 @@
+# packages/weather_data_processing/src/weather_data_processing/utils/logging.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -43,14 +44,14 @@ except ImportError:
 class VerboseLogger:
     """
     Logger wrapper that supports verbose and non-verbose modes.
-    
+
     In verbose mode:
         - Everything logged to file also goes to console
-    
+
     In non-verbose mode:
         - Only messages logged with force=True or level >= WARNING go to console
         - Everything still goes to file
-    
+
     Parameters
     ----------
     name : str
@@ -61,7 +62,7 @@ class VerboseLogger:
         Whether to echo all logs to console (default True).
     module_name : str, optional
         Module name for the log filename (default "weather_processing").
-    
+
     Attributes
     ----------
     logger : logging.Logger
@@ -69,7 +70,7 @@ class VerboseLogger:
     verbose : bool
         Current verbose mode setting.
     """
-    
+
     def __init__(
         self,
         name: str,
@@ -80,12 +81,12 @@ class VerboseLogger:
         self.verbose = verbose
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
-        
+
         # Clear any existing handlers
         if self.logger.hasHandlers():
             for h in list(self.logger.handlers):
                 self.logger.removeHandler(h)
-        
+
         # -----------------------------------------------------------------
         # File Handler: Always DEBUG, captures everything
         # -----------------------------------------------------------------
@@ -97,47 +98,47 @@ class VerboseLogger:
         else:
             log_file = Path(log_file)
             log_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         fh = logging.FileHandler(log_file, mode='a', encoding='utf-8')
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(
             logging.Formatter("%(asctime)s | %(levelname)-8s | %(message)s")
         )
         self.logger.addHandler(fh)
-        
+
         # -----------------------------------------------------------------
         # Console Handler: Level depends on verbose mode
         # -----------------------------------------------------------------
         # We don't add a console handler here; instead we use tqdm.write
         # in the log_msg method for non-blocking output
-        
+
         self.log_file = log_file
         self.logger.info(f"Logging initialized at {log_file}")
         if verbose:
             self.logger.info("Verbose mode: ALL logs will echo to console")
         else:
             self.logger.info("Quiet mode: Only warnings/errors/forced messages to console")
-    
+
     def debug(self, msg: str, echo_console: bool = False, force: bool = False):
         """Log a DEBUG message."""
         self.log_msg(msg, level="debug", echo_console=echo_console, force=force)
-    
+
     def info(self, msg: str, echo_console: bool = False, force: bool = False):
         """Log an INFO message."""
         self.log_msg(msg, level="info", echo_console=echo_console, force=force)
-    
+
     def warning(self, msg: str, echo_console: bool = True, force: bool = False):
         """Log a WARNING message (defaults to console output)."""
         self.log_msg(msg, level="warning", echo_console=echo_console, force=force)
-    
+
     def error(self, msg: str, echo_console: bool = True, force: bool = True):
         """Log an ERROR message (always to console)."""
         self.log_msg(msg, level="error", echo_console=echo_console, force=force)
-    
+
     def critical(self, msg: str, echo_console: bool = True, force: bool = True):
         """Log a CRITICAL message (always to console)."""
         self.log_msg(msg, level="critical", echo_console=echo_console, force=force)
-    
+
     def log_msg(
         self,
         msg: str,
@@ -148,10 +149,10 @@ class VerboseLogger:
     ) -> None:
         """
         Unified logging utility.
-        
+
         - Always logs to file.
         - Optionally echoes to console via tqdm.write (non-blocking).
-        
+
         Parameters
         ----------
         msg : str
@@ -166,10 +167,10 @@ class VerboseLogger:
         # Always log to file
         log_fn = getattr(self.logger, level, self.logger.info)
         log_fn(msg)
-        
+
         # Console output decision
         should_echo = False
-        
+
         if force:
             # force=True always prints
             should_echo = True
@@ -182,7 +183,7 @@ class VerboseLogger:
         elif level in ("warning", "error", "critical"):
             # Always show warnings and errors, even in non-verbose mode
             should_echo = True
-        
+
         if should_echo:
             tqdm.write(msg)
 
@@ -195,10 +196,10 @@ def setup_logger(
 ) -> VerboseLogger:
     """
     Initialize and return a configured logger.
-    
+
     Logs are written to <repo_root>/logs/weather_data_processing
     (or $OSME_LOG_DIR/weather_data_processing).
-    
+
     Parameters
     ----------
     name : str, optional
@@ -209,18 +210,18 @@ def setup_logger(
         Whether to echo logs to console (default True).
     module_name : str, optional
         Module name for organizing logs (default "weather_data_processing").
-    
+
     Returns
     -------
     VerboseLogger
         Configured logger instance.
-    
+
     Examples
     --------
     >>> logger = setup_logger(verbose=True)
     >>> logger.info("This goes to file and console", force=True)
     >>> logger.debug("This goes to file only (unless verbose=True)")
-    
+
     >>> logger = setup_logger(verbose=False)
     >>> logger.info("File only")
     >>> logger.warning("File and console (warnings always show)")
@@ -228,13 +229,13 @@ def setup_logger(
     if save_dir is None:
         base_dir = get_log_dir(create=True) / module_name
     else:
-        base_dir = Path(save_dir) / module_name
-    
+        base_dir = Path(save_dir)
+
     base_dir.mkdir(parents=True, exist_ok=True)
-    
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = base_dir / f"{name}_{timestamp}.log"
-    
+
     return VerboseLogger(
         name=name,
         log_file=log_file,

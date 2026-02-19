@@ -1,3 +1,4 @@
+# packages/weather_data_processing/src/weather_data_processing/processing/consolidation.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -56,22 +57,22 @@ FNAME_RE = re.compile(
 def parse_filename(path: Path) -> Tuple[str, str, int, int]:
     """
     Parse filename to extract prefix, UID, year, month.
-    
+
     Parameters
     ----------
     path : Path
         Path to parquet file.
-    
+
     Returns
     -------
     tuple
         (prefix, uid, year, month)
-    
+
     Raises
     ------
     ValueError
         If filename doesn't match expected pattern.
-    
+
     Examples
     --------
     >>> prefix, uid, year, month = parse_filename(
@@ -83,7 +84,7 @@ def parse_filename(path: Path) -> Tuple[str, str, int, int]:
     m = FNAME_RE.match(path.name)
     if not m:
         raise ValueError(f"Filename not recognized: {path.name}")
-    
+
     return (
         m.group("prefix"),
         m.group("uid"),
@@ -135,7 +136,7 @@ class RenamingResult:
 class ConsolidationProcessor:
     """
     Three-stage consolidation processor.
-    
+
     Parameters
     ----------
     global_dtype_map : dict
@@ -146,7 +147,7 @@ class ConsolidationProcessor:
         Column rename map from metadata (shortName → datasetProcessingName).
     logger : VerboseLogger, optional
         Logger instance.
-    
+
     Examples
     --------
     >>> processor = ConsolidationProcessor(
@@ -154,10 +155,10 @@ class ConsolidationProcessor:
     ...     drop_cols=DEFAULT_DROP_COLS,
     ...     metadata_rename=rename_map
     ... )
-    >>> 
+    >>>
     >>> # Stage 1: Optimize
     >>> result = processor.optimize_file(input_file, output_file)
-    >>> 
+    >>>
     >>> # Stage 2: Consolidate
     >>> result = processor.consolidate_year(
     ...     year=2018,
@@ -165,11 +166,11 @@ class ConsolidationProcessor:
     ...     output_dir=output_dir,
     ...     mode="annual"
     ... )
-    >>> 
+    >>>
     >>> # Stage 3: Rename
     >>> result = processor.rename_file(input_file, output_file)
     """
-    
+
     def __init__(
         self,
         global_dtype_map: Dict[str, pl.DataType],
@@ -181,11 +182,11 @@ class ConsolidationProcessor:
         self.drop_cols = drop_cols or DEFAULT_DROP_COLS
         self.metadata_rename = metadata_rename or {}
         self.logger = logger or VerboseLogger("consolidation", verbose=False)
-    
+
     # -------------------------------------------------------------------------
     # Stage 1: Optimize
     # -------------------------------------------------------------------------
-    
+
     def optimize_file(
         self,
         input_file: Path,
@@ -194,7 +195,7 @@ class ConsolidationProcessor:
     ) -> OptimizationResult:
         """
         Optimize a single parquet file: filter, drop, cast, save.
-        
+
         Parameters
         ----------
         input_file : Path
@@ -203,40 +204,40 @@ class ConsolidationProcessor:
             Output cleaned parquet file.
         overwrite : bool, optional
             Overwrite existing output file.
-        
+
         Returns
         -------
         OptimizationResult
             Processing result with statistics.
         """
         t0 = time.perf_counter()
-        
+
         if output_file.exists() and not overwrite:
             self.logger.debug(f"Skipping {output_file.name} (exists)")
             return None
-        
+
         self.logger.debug(f"Optimizing {input_file.name}")
-        
+
         # Load file
         df = pl.scan_parquet(input_file)
-        
+
         rows_before = df.select(pl.len()).collect().item()
-        
+
         # Step 1: Filter timestamps if needed
         # (Assuming timestamps are already valid from Step 2)
-        
+
         # Step 2: Drop unwanted columns
         cols_before_drop = df.collect_schema().names()
         df = drop_columns(df, self.drop_cols)
         cols_after_drop = df.collect_schema().names()
-        
+
         dropped_cols = sorted(set(cols_before_drop) - set(cols_after_drop))
-        
+
         # Step 3: Validate schema
         current_schema = df.collect_schema()
         expected_cols = set(self.global_dtype_map.keys())
         actual_cols = set(current_schema.names())
-        
+
         # Allow extra columns from Step 2 (like ADM columns)
         # but ensure all expected columns are present
         missing_cols = expected_cols - actual_cols
@@ -244,25 +245,25 @@ class ConsolidationProcessor:
             raise ValueError(
                 f"Missing required columns in {input_file.name}: {missing_cols}"
             )
-        
+
         # Step 4: Cast columns
         df_cast = cast_columns(df, self.global_dtype_map)
-        
+
         cast_schema = df_cast.collect_schema()
         cast_cols = [
             col for col in current_schema.names()
             if col in self.global_dtype_map
             and current_schema[col] != self.global_dtype_map[col]
         ]
-        
+
         # Step 5: Sort columns (consistent ordering)
         # Put standard columns first, then extras (like ADM)
         standard_cols = sorted(set(cols_after_drop) & expected_cols)
         extra_cols = sorted(set(cols_after_drop) - expected_cols)
         ordered_cols = standard_cols + extra_cols
-        
+
         df_final = df_cast.select(ordered_cols)
-        
+
         # Collect and write
         output_file.parent.mkdir(parents=True, exist_ok=True)
         df_final.collect().write_parquet(
@@ -270,16 +271,16 @@ class ConsolidationProcessor:
             compression="zstd",
             statistics=True
         )
-        
+
         rows_after = rows_before  # No row filtering in current implementation
-        
+
         dt = time.perf_counter() - t0
-        
+
         self.logger.debug(
             f"  Optimized: {input_file.name} → {output_file.name} "
             f"({rows_after:,} rows, {dt:.2f}s)"
         )
-        
+
         return OptimizationResult(
             input_file=input_file,
             output_file=output_file,
@@ -289,11 +290,11 @@ class ConsolidationProcessor:
             columns_cast=cast_cols,
             processing_time_s=dt,
         )
-    
+
     # -------------------------------------------------------------------------
     # Stage 2: Consolidate
     # -------------------------------------------------------------------------
-    
+
     def consolidate_year(
         self,
         year: int,
@@ -306,7 +307,7 @@ class ConsolidationProcessor:
     ) -> ConsolidationResult:
         """
         Consolidate monthly files for a year into annual/biannual/quarterly file.
-        
+
         Parameters
         ----------
         year : int
@@ -323,14 +324,14 @@ class ConsolidationProcessor:
             Consolidation mode.
         overwrite : bool, optional
             Overwrite existing output file.
-        
+
         Returns
         -------
         ConsolidationResult
             Processing result.
         """
         t0 = time.perf_counter()
-        
+
         # Build output filename
         if mode == "annual":
             output_name = f"{prefix}_{uid}_{year}.parquet"
@@ -356,45 +357,45 @@ class ConsolidationProcessor:
             output_name = f"{prefix}_{uid}_{year}_{q}.parquet"
         else:
             raise ValueError(f"Unknown mode: {mode}")
-        
+
         output_file = output_dir / output_name
-        
+
         if output_file.exists() and not overwrite:
             self.logger.debug(f"Skipping {output_name} (exists)")
             return None
-        
+
         self.logger.debug(f"Consolidating {year} ({mode}): {len(monthly_files)} files")
-        
+
         # Read and concatenate
         dfs = [pl.scan_parquet(f) for f in sorted(monthly_files)]
         df_concat = pl.concat(dfs)
-        
+
         # Ensure consistent column order
         schema = df_concat.collect_schema()
         standard_cols = sorted(set(schema.names()) & set(self.global_dtype_map.keys()))
         extra_cols = sorted(set(schema.names()) - set(self.global_dtype_map.keys()))
         ordered_cols = standard_cols + extra_cols
-        
+
         df_final = df_concat.select(ordered_cols)
-        
+
         # Collect and write
         output_dir.mkdir(parents=True, exist_ok=True)
         df_collected = df_final.collect()
-        
+
         df_collected.write_parquet(
             output_file,
             compression="zstd",
             statistics=True
         )
-        
+
         total_rows = len(df_collected)
-        
+
         dt = time.perf_counter() - t0
-        
+
         self.logger.debug(
             f"  Consolidated: {output_name} ({total_rows:,} rows, {dt:.2f}s)"
         )
-        
+
         return ConsolidationResult(
             output_file=output_file,
             mode=mode,
@@ -403,11 +404,11 @@ class ConsolidationProcessor:
             total_rows=total_rows,
             processing_time_s=dt,
         )
-    
+
     # -------------------------------------------------------------------------
     # Stage 3: Rename
     # -------------------------------------------------------------------------
-    
+
     def rename_file(
         self,
         input_file: Path,
@@ -416,7 +417,7 @@ class ConsolidationProcessor:
     ) -> RenamingResult:
         """
         Rename columns using metadata mapping.
-        
+
         Parameters
         ----------
         input_file : Path
@@ -425,30 +426,30 @@ class ConsolidationProcessor:
             Output parquet file with renamed columns.
         overwrite : bool, optional
             Overwrite existing output file.
-        
+
         Returns
         -------
         RenamingResult
             Processing result.
         """
         t0 = time.perf_counter()
-        
+
         if output_file.exists() and not overwrite:
             self.logger.debug(f"Skipping {output_file.name} (exists)")
             return None
-        
+
         self.logger.debug(f"Renaming columns: {input_file.name}")
-        
+
         # Load file
         df = pl.read_parquet(input_file)
-        
+
         # Build rename map (only for columns that exist)
         actual_rename = {
             old: new
             for old, new in self.metadata_rename.items()
             if old in df.columns and old != new
         }
-        
+
         if not actual_rename:
             # No renaming needed, just copy
             self.logger.debug("  No columns to rename")
@@ -456,7 +457,7 @@ class ConsolidationProcessor:
         else:
             # Apply renaming
             df_renamed = df.rename(actual_rename)
-            
+
             # Write
             output_file.parent.mkdir(parents=True, exist_ok=True)
             df_renamed.write_parquet(
@@ -464,14 +465,14 @@ class ConsolidationProcessor:
                 compression="zstd",
                 statistics=True
             )
-        
+
         dt = time.perf_counter() - t0
-        
+
         self.logger.debug(
             f"  Renamed: {input_file.name} → {output_file.name} "
             f"({len(actual_rename)} columns, {dt:.2f}s)"
         )
-        
+
         return RenamingResult(
             input_file=input_file,
             output_file=output_file,
@@ -487,17 +488,17 @@ class ConsolidationProcessor:
 def load_metadata_rename_map(metadata_file: Path) -> Dict[str, str]:
     """
     Load column rename map from metadata JSON.
-    
+
     Parameters
     ----------
     metadata_file : Path
         Path to metadata JSON file.
-    
+
     Returns
     -------
     dict
         Rename map: shortName → datasetProcessingName
-    
+
     Examples
     --------
     >>> rename_map = load_metadata_rename_map(Path("metadata.json"))
@@ -506,13 +507,13 @@ def load_metadata_rename_map(metadata_file: Path) -> Dict[str, str]:
     """
     if not metadata_file.exists():
         raise FileNotFoundError(f"Metadata file not found: {metadata_file}")
-    
+
     with open(metadata_file, "r") as f:
         metadata = json.load(f)
-    
+
     # Extract rename map from metadata
     rename_map = {}
-    
+
     # Metadata structure varies, adapt based on your actual format
     # Example: metadata["variables"][shortName]["datasetProcessingName"]
     if "variables" in metadata:
@@ -521,5 +522,5 @@ def load_metadata_rename_map(metadata_file: Path) -> Dict[str, str]:
                 proc_name = var_info["datasetProcessingName"]
                 if proc_name and proc_name != short_name:
                     rename_map[short_name] = proc_name
-    
+
     return rename_map

@@ -7,7 +7,7 @@ name = "weather-data-processing"
 version = "1.0.0"
 description = "Production pipeline for processing Indian national grid electricity data"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
@@ -27,6 +27,13 @@ dependencies = [
     "matplotlib>=3.7.0",
     "python-dateutil>=2.8.0",
     "osme-common",  # Internal dependency
+    "pydantic>=2.0.0",
+    "tqdm>=4.66",
+    "geopandas>=0.14",
+    "shapely>=2.0",
+    "xarray>=2023.0.0",
+    "cfgrib>=0.9.10",
+    "eccodes>=1.6.0",
 ]
 
 [project.optional-dependencies]
@@ -40,13 +47,15 @@ dev = [
 
 [project.scripts]
 # Primary entry point
-process-weather-data = "weather_data_processing.runner:run_pipeline"
+process-weather-data = "weather_data_processing:run_pipeline"
 
 # Command aliases - all point to the same function
-pwd = "weather_data_processing.runner:run_pipeline"
-weatherdataprocessing = "weather_data_processing.runner:run_pipeline"
-weatherprocessing = "weather_data_processing.runner:run_pipeline"
-weaproc = "weather_data_processing.runner:run_pipeline"
+weather-data-processing = "weather_data_processing.run_pipeline:main"
+weatherdataprocessing = "weather_data_processing.run_pipeline:main"
+weatherprocessing = "weather_data_processing.run_pipeline:main"
+weaproc = "weather_data_processing.run_pipeline:main"
+wdp = "weather_data_processing.run_pipeline:main"
+process-weather-data = "weather_data_processing.run_pipeline:main"
 
 [tool.setuptools]
 include-package-data = true

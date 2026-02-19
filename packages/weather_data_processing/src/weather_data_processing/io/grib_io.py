@@ -1,3 +1,4 @@
+# packages/weather_data_processing/src/weather_data_processing/io/grib_io.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -38,12 +39,12 @@ from eccodes import (
 def extract_variable_metadata(grib_file: Path) -> Dict[str, Dict[str, Any]]:
     """
     Extract metadata for all variables in a GRIB file.
-    
+
     Parameters
     ----------
     grib_file : Path
         Path to GRIB file.
-    
+
     Returns
     -------
     dict
@@ -51,7 +52,7 @@ def extract_variable_metadata(grib_file: Path) -> Dict[str, Dict[str, Any]]:
         - paramId: int
         - shortName: str
         - fullName: str (if available)
-    
+
     Examples
     --------
     >>> metadata = extract_variable_metadata(Path("era5_2018-01.grib"))
@@ -59,33 +60,33 @@ def extract_variable_metadata(grib_file: Path) -> Dict[str, Dict[str, Any]]:
     {'paramId': 167, 'shortName': '2t', 'fullName': '2 metre temperature'}
     """
     metadata = {}
-    
+
     with open(grib_file, "rb") as f:
         while True:
             try:
                 gid = codes_grib_new_from_file(f)
             except CodesInternalError:
                 break
-            
+
             if gid is None:
                 break
-            
+
             try:
                 param_id = codes_get(gid, "paramId")
                 short_name = codes_get(gid, "shortName")
-                
+
                 # Try to get full name (may not always be available)
                 try:
                     full_name = codes_get(gid, "name")
                 except Exception:
                     full_name = short_name
-                
+
                 # Decode bytes if needed
                 if isinstance(short_name, bytes):
                     short_name = short_name.decode("utf-8")
                 if isinstance(full_name, bytes):
                     full_name = full_name.decode("utf-8")
-                
+
                 metadata[int(param_id)] = {
                     "paramId": int(param_id),
                     "shortName": short_name,
@@ -93,7 +94,7 @@ def extract_variable_metadata(grib_file: Path) -> Dict[str, Dict[str, Any]]:
                 }
             finally:
                 codes_release(gid)
-    
+
     return metadata
 
 
@@ -104,7 +105,7 @@ def load_grib_dataset(
 ) -> xr.Dataset:
     """
     Load GRIB file as xarray Dataset.
-    
+
     Parameters
     ----------
     grib_file : Path
@@ -114,12 +115,12 @@ def load_grib_dataset(
         If None, load all variables.
     squeeze : bool, optional
         Squeeze singleton dimensions (default True).
-    
+
     Returns
     -------
     xr.Dataset
         Loaded dataset with all requested variables.
-    
+
     Examples
     --------
     >>> ds = load_grib_dataset(
@@ -152,16 +153,16 @@ def load_grib_dataset(
             except Exception:
                 # Variable not in file, skip
                 continue
-        
+
         if not datasets:
             raise ValueError(f"None of the requested variables found in {grib_file}")
-        
+
         # Merge all variables
         ds = xr.merge(datasets)
-    
+
     if squeeze:
         ds = ds.squeeze(drop=True)
-    
+
     return ds
 
 
@@ -171,19 +172,19 @@ def extract_grid_coordinates(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Extract latitude and longitude grid from a GRIB file.
-    
+
     Parameters
     ----------
     grib_file : Path
         Path to GRIB file.
     sample_variable : str, optional
         Variable to use for extracting grid. If None, uses first available.
-    
+
     Returns
     -------
     tuple of ndarray
         (latitudes, longitudes) as 1D arrays.
-    
+
     Examples
     --------
     >>> lats, lons = extract_grid_coordinates(Path("era5_2018-01.grib"))
@@ -204,12 +205,12 @@ def extract_grid_coordinates(
             engine="cfgrib",
             backend_kwargs={"indexpath": ""}
         )
-    
+
     lats = ds["latitude"].values
     lons = ds["longitude"].values
-    
+
     ds.close()
-    
+
     return lats, lons
 
 
@@ -220,7 +221,7 @@ def grib_to_dataframe(
 ) -> pl.DataFrame:
     """
     Convert xarray Dataset to Polars DataFrame, optionally applying a spatial mask.
-    
+
     Parameters
     ----------
     ds : xr.Dataset
@@ -230,12 +231,12 @@ def grib_to_dataframe(
         Only grid cells in the mask will be retained.
     timestamp : datetime-like, optional
         Timestamp to assign to the 'time' column.
-    
+
     Returns
     -------
     pl.DataFrame
         DataFrame with columns: latitude, longitude, time, and all data variables.
-    
+
     Examples
     --------
     >>> ds = load_grib_dataset(grib_file)
@@ -251,7 +252,7 @@ def grib_to_dataframe(
         lon2d, lat2d = xr.broadcast(ds["longitude"], ds["latitude"])
         lats = lat2d.values.ravel()
         lons = lon2d.values.ravel()
-    
+
     # Create coordinate grid
     if lats.ndim == 1 and lons.ndim == 1:
         # Regular grid
@@ -262,21 +263,21 @@ def grib_to_dataframe(
         # Already flattened
         lats_flat = lats.ravel()
         lons_flat = lons.ravel()
-    
+
     # Build DataFrame
     data_dict = {
         "latitude": lats_flat,
         "longitude": lons_flat,
     }
-    
+
     # Add timestamp if provided
     if timestamp is not None:
         data_dict["time"] = [timestamp] * len(lats_flat)
-    
+
     # Extract data variables
     for var_name in ds.data_vars:
         var_data = ds[var_name].values
-        
+
         # Handle different dimensionalities
         if var_data.ndim == 0:
             # Scalar
@@ -290,9 +291,9 @@ def grib_to_dataframe(
         else:
             # Higher dimensions - take first time slice if needed
             data_dict[var_name] = var_data.reshape(-1, var_data.shape[-1]).ravel()
-    
+
     df = pl.DataFrame(data_dict)
-    
+
     # Apply mask if provided
     if mask is not None:
         df = df.join(
@@ -300,24 +301,24 @@ def grib_to_dataframe(
             on=["latitude", "longitude"],
             how="inner"
         )
-        
+
         # Add frac_in_region if available in mask
         if "frac_in_region" in mask.columns:
             mask_fracs = mask.select(["latitude", "longitude", "frac_in_region"])
             df = df.join(mask_fracs, on=["latitude", "longitude"], how="left")
-    
+
     return df
 
 
 def estimate_grib_size_mb(grib_file: Path) -> float:
     """
     Estimate GRIB file size in megabytes.
-    
+
     Parameters
     ----------
     grib_file : Path
         Path to GRIB file.
-    
+
     Returns
     -------
     float
@@ -330,12 +331,12 @@ def estimate_grib_size_mb(grib_file: Path) -> float:
 def count_messages_in_grib(grib_file: Path) -> int:
     """
     Count the number of GRIB messages in a file.
-    
+
     Parameters
     ----------
     grib_file : Path
         Path to GRIB file.
-    
+
     Returns
     -------
     int
@@ -348,11 +349,11 @@ def count_messages_in_grib(grib_file: Path) -> int:
                 gid = codes_grib_new_from_file(f)
             except CodesInternalError:
                 break
-            
+
             if gid is None:
                 break
-            
+
             count += 1
             codes_release(gid)
-    
+
     return count

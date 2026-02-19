@@ -1,3 +1,4 @@
+# packages/weather_data_processing/src/weather_data_processing/utils/parallel.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -26,7 +27,7 @@ from typing import Literal, Optional
 class ComputeEnvironment:
     """
     Detected compute environment configuration.
-    
+
     Attributes
     ----------
     backend : {'local', 'pbs', 'slurm', 'mpi'}
@@ -40,13 +41,13 @@ class ComputeEnvironment:
     nodefile_path : Path or None
         Path to the PBS/SLURM nodefile, if applicable.
     """
-    
+
     backend: Literal["local", "pbs", "slurm", "mpi"]
     total_cores: int
     available_ranks: Optional[int] = None
     node_count: Optional[int] = None
     nodefile_path: Optional[Path] = None
-    
+
     def recommended_workers(
         self,
         task_type: str = "cpu",
@@ -54,7 +55,7 @@ class ComputeEnvironment:
     ) -> int:
         """
         Recommend worker count based on task type and environment.
-        
+
         Parameters
         ----------
         task_type : str, optional
@@ -62,7 +63,7 @@ class ComputeEnvironment:
         cap_fraction : float, optional
             For local execution, fraction of cores to use (default 0.75
             to avoid freezing the system).
-        
+
         Returns
         -------
         int
@@ -71,13 +72,13 @@ class ComputeEnvironment:
         if self.backend == "local":
             # Cap at cap_fraction for local machines to avoid system freeze
             return max(1, int(self.total_cores * cap_fraction))
-        
+
         elif self.backend in ("pbs", "slurm", "mpi"):
             # Use all allocated resources on HPC
             return self.available_ranks or self.total_cores
-        
+
         return max(1, self.total_cores)
-    
+
     def __str__(self) -> str:
         """Return human-readable environment description."""
         lines = [
@@ -96,18 +97,18 @@ class ComputeEnvironment:
 def detect_environment() -> ComputeEnvironment:
     """
     Auto-detect the current compute environment.
-    
+
     Detection order:
     1. PBS (via $PBS_NODEFILE)
     2. SLURM (via $SLURM_JOB_ID)
     3. Generic MPI (via $OMPI_COMM_WORLD_SIZE or $PMI_SIZE)
     4. Local machine (fallback)
-    
+
     Returns
     -------
     ComputeEnvironment
         Detected environment configuration.
-    
+
     Examples
     --------
     >>> env = detect_environment()
@@ -116,7 +117,7 @@ def detect_environment() -> ComputeEnvironment:
       Total cores: 128
       MPI ranks: 30
       Nodes: 2
-    
+
     >>> workers = env.recommended_workers()
     >>> print(f"Using {workers} workers")
     Using 30 workers
@@ -131,7 +132,7 @@ def detect_environment() -> ComputeEnvironment:
             lines = nodefile_path.read_text().strip().split("\n")
             ranks = len(lines)
             unique_nodes = len(set(lines))
-            
+
             return ComputeEnvironment(
                 backend="pbs",
                 total_cores=os.cpu_count() or 1,
@@ -139,7 +140,7 @@ def detect_environment() -> ComputeEnvironment:
                 node_count=unique_nodes,
                 nodefile_path=nodefile_path
             )
-    
+
     # -----------------------------------------------------------------
     # SLURM Detection
     # -----------------------------------------------------------------
@@ -150,7 +151,7 @@ def detect_environment() -> ComputeEnvironment:
             available_ranks=int(os.getenv("SLURM_NTASKS", 1)),
             node_count=int(os.getenv("SLURM_NNODES", 1))
         )
-    
+
     # -----------------------------------------------------------------
     # Generic MPI Detection
     # -----------------------------------------------------------------
@@ -162,7 +163,7 @@ def detect_environment() -> ComputeEnvironment:
             available_ranks=int(mpi_size),
             node_count=None
         )
-    
+
     # -----------------------------------------------------------------
     # Local Machine (Fallback)
     # -----------------------------------------------------------------
@@ -177,12 +178,12 @@ def detect_environment() -> ComputeEnvironment:
 def get_mpi_rank() -> int:
     """
     Get the current MPI rank (if running under MPI).
-    
+
     Returns
     -------
     int
         MPI rank (0-indexed). Returns 0 if not running under MPI.
-    
+
     Examples
     --------
     >>> rank = get_mpi_rank()
@@ -194,14 +195,14 @@ def get_mpi_rank() -> int:
         val = os.getenv(var)
         if val is not None:
             return int(val)
-    
+
     return 0
 
 
 def is_rank_zero() -> bool:
     """
     Check if this is the master/root process (rank 0).
-    
+
     Returns
     -------
     bool

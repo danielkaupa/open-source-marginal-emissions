@@ -6,20 +6,20 @@
   },
   "logging": {
     "verbose": false,
-    "log_dir": "logs/weather_data_processing",
+    "log_dir": "weather_data_processing",
     "log_level": "INFO"
   },
   "data_paths": {
-    "grib_dir": "data/era5-world/raw",
-    "output_base": "data/era5-world/processed",
-    "interim_dir": "data/era5-world/interim",
-    "processed_dir": "data/era5-world/processed"
+    "grib_dir": "era5-world/raw",
+    "output_base": "era5-world/processed",
+    "interim_dir": "era5-world/interim",
+    "processed_dir": "era5-world/processed"
   },
   "geographic": {
     "boundary": {
-      "shapefile_adm0": "data/geoBoundaries/geoBoundariesCGAZ_ADM0.zip",
-      "shapefile_adm1": "data/geoBoundaries/geoBoundariesCGAZ_ADM1.zip",
-      "shapefile_adm2": "data/geoBoundaries/geoBoundariesCGAZ_ADM2.zip",
+      "shapefile_adm0": "geoBoundaries/geoBoundariesCGAZ_ADM0.zip",
+      "shapefile_adm1": "geoBoundaries/geoBoundariesCGAZ_ADM1.zip",
+      "shapefile_adm2": "geoBoundaries/geoBoundariesCGAZ_ADM2.zip",
       "country_name": "India",
       "country_field": "shapeName"
     },
@@ -27,10 +27,26 @@
       "inclusion_mode": "combined",
       "fraction_threshold": 0.8,
       "dataset_prefix": "era5-world",
-      "mask_dir": "data/geoBoundaries/masks/era5-world",
-      "metadata_dir": "data/geoBoundaries/masks/mask_metadata",
+      "mask_dir": "geoBoundaries/masks/era5-world",
+      "metadata_dir": "geoBoundaries/masks/mask_metadata",
       "generate_visualization": true,
-      "image_dir": "data/geoBoundaries/images"
+      "image_dir": "geoBoundaries/images",
+      "exclusion_bboxes": [
+        {
+          "name": "andaman_nicobar",
+          "lon_min": 90.0,
+          "lon_max": 95.0,
+          "lat_min": -10.0,
+          "lat_max": 15.0
+        },
+        {
+          "name": "lakshadweep",
+          "lon_min": 71.0,
+          "lon_max": 74.0,
+          "lat_min": 8.2,
+          "lat_max": 11.7
+        }
+      ]
     },
     "adm_enrichment": {
       "enable_adm1": true,

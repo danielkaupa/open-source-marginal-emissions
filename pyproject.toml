@@ -155,11 +155,12 @@ gridprocessing = "grid_data_processing.runner:run_pipeline"
 gridproc = "grid_data_processing.runner:run_pipeline"
 
 # Weather data processing entry points
-process-weather-data = "weather_data_processing.runner:run_pipeline"
-pwd = "weather_data_processing.runner:run_pipeline"
-weatherdataprocessing = "weather_data_processing.runner:run_pipeline"
-weatherprocessing = "weather_data_processing.runner:run_pipeline"
-weaproc = "weather_data_processing.runner:run_pipeline"
+process-weather-data = "weather_data_processing.run_pipeline:main"
+pwd = "weather_data_processing.run_pipeline:main"
+weatherdataprocessing = "weather_data_processing.run_pipeline:main"
+weatherprocessing = "weather_data_processing.run_pipeline:main"
+weaproc = "weather_data_processing.run_pipeline:main"
+wdp = "weather_data_processing.run_pipeline:main"
 
 dcaj = "data_cleaning_and_joining.main:main"
 mem = "marginal_emissions_modelling.main:main"
@@ -173,6 +174,7 @@ license-files = ["LICENSE*", "COPYING*", "NOTICE*", "COMMERCIAL*"]
 packages = [
     "osme_common",
     "weather_data_retrieval",
+    "weather_data_processing",
     "grid_data_retrieval",
     "grid_data_processing",
     "data_cleaning_and_joining",
@@ -189,6 +191,7 @@ local_scheme = "node-and-date"
 [tool.setuptools.package-dir]
 osme_common = "packages/osme_common/src/osme_common"
 weather_data_retrieval = "packages/weather_data_retrieval/src/weather_data_retrieval"
+weather_data_processing = "packages/weather_data_processing/src/weather_data_processing"
 grid_data_retrieval = "packages/grid_data_retrieval/src/grid_data_retrieval"
 grid_data_processing = "packages/grid_data_processing/src/grid_data_processing"
 data_cleaning_and_joining = "packages/data_cleaning_and_joining/src/data_cleaning_and_joining"

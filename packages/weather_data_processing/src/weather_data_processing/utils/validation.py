@@ -1,3 +1,4 @@
+# packages/weather_data_processing/src/weather_data_processing/utils/validation.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -46,63 +47,63 @@ DEFAULT_DTYPE_MAP: Dict[str, pl.DataType] = {
     "longitude": pl.Float32,
     "latitude": pl.Float32,
     "time": pl.Datetime("us"),
-    
+
     # Fractional region coverage
     "frac_in_region": pl.Float32,
-    
+
     # Administrative boundaries
     "adm1_name": pl.String,
     "adm1_code": pl.String,
     "adm2_name": pl.String,
     "adm2_code": pl.String,
-    
+
     # Temperature
     "2t": pl.Float32,  # 2m temperature
-    
+
     # Precipitation
     "tp": pl.Float32,  # Total precipitation
-    
+
     # Wind components
     "10u": pl.Float32,   # 10m U wind
     "10v": pl.Float32,   # 10m V wind
     "100u": pl.Float32,  # 100m U wind
     "100v": pl.Float32,  # 100m V wind
-    
+
     # Radiation (clear sky)
     "cdir": pl.Float32,  # Clear-sky direct solar radiation
     "uvb": pl.Float32,   # UV biologically active
-    
+
     # Radiation (solar - shortwave)
     "ssr": pl.Float32,    # Surface net solar radiation
     "ssrc": pl.Float32,   # Surface net solar radiation clear-sky
     "ssrdc": pl.Float32,  # Surface direct solar radiation clear-sky
     "ssrd": pl.Float32,   # Surface downward solar radiation
     "fdir": pl.Float32,   # Total sky direct solar radiation at surface
-    
+
     # Radiation (thermal - longwave)
     "str": pl.Float32,    # Surface net thermal radiation
     "strc": pl.Float32,   # Surface net thermal radiation clear-sky
     "strdc": pl.Float32,  # Surface downward thermal radiation clear-sky
     "strd": pl.Float32,   # Surface downward thermal radiation
-    
+
     # Radiation (top of atmosphere)
     "tsr": pl.Float32,    # Top net solar radiation
     "tsrc": pl.Float32,   # Top net solar radiation clear-sky
     "ttr": pl.Float32,    # Top net thermal radiation
     "ttrc": pl.Float32,   # Top net thermal radiation clear-sky
-    
+
     # Cloud cover
     "hcc": pl.Float32,  # High cloud cover
     "lcc": pl.Float32,  # Low cloud cover
     "mcc": pl.Float32,  # Medium cloud cover
     "tcc": pl.Float32,  # Total cloud cover
-    
+
     # Vegetation
     "cvh": pl.Float32,     # High vegetation cover
     "cvl": pl.Float32,     # Low vegetation cover
     "lai_hv": pl.Float32,  # Leaf area index (high vegetation)
     "lai_lv": pl.Float32,  # Leaf area index (low vegetation)
-    
+
     # Other
     "kx": pl.Float32,  # K index
 }
@@ -119,7 +120,7 @@ def build_global_dtype_map(
 ) -> Dict[str, pl.DataType]:
     """
     Build a global dtype map from reference schema with optional overrides.
-    
+
     Parameters
     ----------
     reference_schema : dict
@@ -128,12 +129,12 @@ def build_global_dtype_map(
         Manual dtype overrides (e.g., DEFAULT_DTYPE_MAP).
     drop_cols : list of str, optional
         Columns to exclude from the global map.
-    
+
     Returns
     -------
     dict
         Global dtype map: column_name -> polars.DataType
-    
+
     Examples
     --------
     >>> ref_schema = pl.read_parquet_schema("reference.parquet")
@@ -145,16 +146,16 @@ def build_global_dtype_map(
     """
     override_map = override_map or {}
     drop_cols = set(drop_cols or [])
-    
+
     global_map = {}
-    
+
     for col, dtype in reference_schema.items():
         if col in drop_cols:
             continue
-        
+
         # Use override if available, otherwise use reference
         global_map[col] = override_map.get(col, dtype)
-    
+
     return global_map
 
 
@@ -166,7 +167,7 @@ def validate_schema(
 ) -> Tuple[bool, List[str]]:
     """
     Validate DataFrame schema against expected schema.
-    
+
     Parameters
     ----------
     df_schema : dict
@@ -177,12 +178,12 @@ def validate_schema(
         Allow extra columns not in expected schema.
     allow_missing : bool, optional
         Allow missing columns from expected schema.
-    
+
     Returns
     -------
     tuple
         (is_valid, error_messages)
-    
+
     Examples
     --------
     >>> df = pl.read_parquet("data.parquet")
@@ -192,20 +193,20 @@ def validate_schema(
     ...         print(f"ERROR: {err}")
     """
     errors = []
-    
+
     df_cols = set(df_schema.keys())
     expected_cols = set(expected_schema.keys())
-    
+
     # Check for missing columns
     missing = expected_cols - df_cols
     if missing and not allow_missing:
         errors.append(f"Missing columns: {sorted(missing)}")
-    
+
     # Check for extra columns
     extra = df_cols - expected_cols
     if extra and not allow_extra:
         errors.append(f"Extra columns: {sorted(extra)}")
-    
+
     # Check dtypes for common columns
     for col in df_cols & expected_cols:
         if df_schema[col] != expected_schema[col]:
@@ -213,7 +214,7 @@ def validate_schema(
                 f"Column '{col}' dtype mismatch: "
                 f"got {df_schema[col]}, expected {expected_schema[col]}"
             )
-    
+
     return len(errors) == 0, errors
 
 
@@ -223,25 +224,25 @@ def get_columns_to_cast(
 ) -> List[str]:
     """
     Identify columns that need dtype casting.
-    
+
     Parameters
     ----------
     df_schema : dict
         Current DataFrame schema.
     target_schema : dict
         Target schema with desired dtypes.
-    
+
     Returns
     -------
     list of str
         Column names that need casting.
     """
     to_cast = []
-    
+
     for col in set(df_schema.keys()) & set(target_schema.keys()):
         if df_schema[col] != target_schema[col]:
             to_cast.append(col)
-    
+
     return sorted(to_cast)
 
 
@@ -251,34 +252,34 @@ def cast_columns(
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Cast DataFrame columns to target dtypes.
-    
+
     Parameters
     ----------
     df : pl.DataFrame or pl.LazyFrame
         Input DataFrame.
     target_schema : dict
         Target schema with desired dtypes.
-    
+
     Returns
     -------
     pl.DataFrame or pl.LazyFrame
         DataFrame with cast columns.
-    
+
     Examples
     --------
     >>> df = pl.read_parquet("data.parquet")
     >>> df_cast = cast_columns(df, DEFAULT_DTYPE_MAP)
     """
     cast_exprs = []
-    
+
     schema = df.collect_schema() if hasattr(df, 'collect_schema') else df.schema
-    
+
     for col in df.columns if isinstance(df, pl.DataFrame) else schema.names():
         if col in target_schema and schema[col] != target_schema[col]:
             cast_exprs.append(pl.col(col).cast(target_schema[col]))
         else:
             cast_exprs.append(pl.col(col))
-    
+
     return df.select(cast_exprs)
 
 
@@ -288,14 +289,14 @@ def drop_columns(
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Drop columns from DataFrame if they exist.
-    
+
     Parameters
     ----------
     df : pl.DataFrame or pl.LazyFrame
         Input DataFrame.
     columns : list of str
         Columns to drop.
-    
+
     Returns
     -------
     pl.DataFrame or pl.LazyFrame
@@ -303,12 +304,12 @@ def drop_columns(
     """
     schema = df.collect_schema() if hasattr(df, 'collect_schema') else df.schema
     existing_cols = schema.names()
-    
+
     to_drop = [col for col in columns if col in existing_cols]
-    
+
     if not to_drop:
         return df
-    
+
     return df.drop(to_drop)
 
 
@@ -318,20 +319,20 @@ def get_schema_diff(
 ) -> Dict[str, Tuple[Optional[pl.DataType], Optional[pl.DataType]]]:
     """
     Compare two schemas and return differences.
-    
+
     Parameters
     ----------
     schema1 : dict
         First schema.
     schema2 : dict
         Second schema.
-    
+
     Returns
     -------
     dict
         Dictionary mapping column name to (dtype1, dtype2) for differences.
         dtype1/dtype2 is None if column is missing from that schema.
-    
+
     Examples
     --------
     >>> diff = get_schema_diff(df1.schema, df2.schema)
@@ -339,16 +340,16 @@ def get_schema_diff(
     ...     print(f"{col}: {dt1} → {dt2}")
     """
     all_cols = set(schema1.keys()) | set(schema2.keys())
-    
+
     diff = {}
-    
+
     for col in sorted(all_cols):
         dt1 = schema1.get(col)
         dt2 = schema2.get(col)
-        
+
         if dt1 != dt2:
             diff[col] = (dt1, dt2)
-    
+
     return diff
 
 
@@ -358,7 +359,7 @@ def print_schema_summary(
 ) -> None:
     """
     Print a formatted schema summary.
-    
+
     Parameters
     ----------
     schema : dict
@@ -368,10 +369,10 @@ def print_schema_summary(
     """
     print(f"\n{label}:")
     print("-" * 60)
-    
+
     for col, dtype in sorted(schema.items()):
         print(f"  {col:<30} {dtype}")
-    
+
     print(f"  Total columns: {len(schema)}")
     print("-" * 60)
 
@@ -382,39 +383,39 @@ def optimize_dtypes(
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Automatically optimize dtypes for memory efficiency.
-    
+
     Parameters
     ----------
     df : pl.DataFrame or pl.LazyFrame
         Input DataFrame.
     aggressive : bool, optional
         Use more aggressive optimization (e.g., Float64 → Float32).
-    
+
     Returns
     -------
     pl.DataFrame or pl.LazyFrame
         DataFrame with optimized dtypes.
     """
     cast_exprs = []
-    
+
     schema = df.collect_schema() if hasattr(df, 'collect_schema') else df.schema
-    
+
     for col, dtype in schema.items():
         new_dtype = dtype
-        
+
         # Downcast floats if aggressive
         if aggressive and dtype == pl.Float64:
             new_dtype = pl.Float32
-        
+
         # Categorical for low-cardinality strings
         if dtype == pl.String:
             # This would require actual data inspection
             # For now, keep as String
             pass
-        
+
         if new_dtype != dtype:
             cast_exprs.append(pl.col(col).cast(new_dtype))
         else:
             cast_exprs.append(pl.col(col))
-    
+
     return df.select(cast_exprs)

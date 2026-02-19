@@ -1,3 +1,4 @@
+# packagees/weather_data_processing/src/weather_data_processing/config_schema.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -30,7 +31,7 @@ from pydantic import BaseModel, Field, field_validator
 class ParallelizationConfig(BaseModel):
     """
     Parallelization settings.
-    
+
     Attributes
     ----------
     mode : {'auto', 'manual'}
@@ -40,11 +41,11 @@ class ParallelizationConfig(BaseModel):
     prefer_mpi : bool
         Prefer MPI over multiprocessing when available.
     """
-    
+
     mode: Literal["auto", "manual"] = "auto"
     manual_workers: Optional[int] = Field(None, ge=1)
     prefer_mpi: bool = True
-    
+
     @field_validator("manual_workers")
     @classmethod
     def validate_manual_workers(cls, v, info):
@@ -61,7 +62,7 @@ class ParallelizationConfig(BaseModel):
 class LoggingConfig(BaseModel):
     """
     Logging configuration.
-    
+
     Attributes
     ----------
     verbose : bool
@@ -71,7 +72,7 @@ class LoggingConfig(BaseModel):
     log_level : str
         File logging level.
     """
-    
+
     verbose: bool = False
     log_dir: str = "logs/weather_data_processing"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
@@ -84,7 +85,7 @@ class LoggingConfig(BaseModel):
 class BoundaryConfig(BaseModel):
     """
     Geographic boundary configuration.
-    
+
     Attributes
     ----------
     shapefile_adm0 : str
@@ -98,18 +99,57 @@ class BoundaryConfig(BaseModel):
     country_field : str
         Field name in shapefile containing country names.
     """
-    
-    shapefile_adm0: str = "data/geoBoundaries/geoBoundariesCGAZ_ADM0.zip"
-    shapefile_adm1: Optional[str] = "data/geoBoundaries/geoBoundariesCGAZ_ADM1.zip"
-    shapefile_adm2: Optional[str] = "data/geoBoundaries/geoBoundariesCGAZ_ADM2.zip"
+
+    shapefile_adm0: str = "geoBoundaries/geoBoundariesCGAZ_ADM0.zip"
+    shapefile_adm1: Optional[str] = "geoBoundaries/geoBoundariesCGAZ_ADM1.zip"
+    shapefile_adm2: Optional[str] = "geoBoundaries/geoBoundariesCGAZ_ADM2.zip"
     country_name: str
     country_field: str = "shapeName"
+
+
+class ExclusionBBoxConfig(BaseModel):
+    """
+    Bounding box defining a region to exclude from the mask.
+
+    Attributes
+    ----------
+    name : str
+        Human-readable label for the exclusion zone (e.g., "andaman_nicobar").
+    lon_min : float
+        Western boundary (degrees).
+    lon_max : float
+        Eastern boundary (degrees).
+    lat_min : float
+        Southern boundary (degrees).
+    lat_max : float
+        Northern boundary (degrees).
+    """
+
+    name: str
+    lon_min: float
+    lon_max: float
+    lat_min: float
+    lat_max: float
+
+    @field_validator("lon_min", "lon_max")
+    @classmethod
+    def validate_longitude(cls, v: float) -> float:
+        if not (-180.0 <= v <= 180.0):
+            raise ValueError(f"Longitude {v} is outside [-180, 180]")
+        return v
+
+    @field_validator("lat_min", "lat_max")
+    @classmethod
+    def validate_latitude(cls, v: float) -> float:
+        if not (-90.0 <= v <= 90.0):
+            raise ValueError(f"Latitude {v} is outside [-90, 90]")
+        return v
 
 
 class MaskConfig(BaseModel):
     """
     Mask generation configuration.
-    
+
     Attributes
     ----------
     inclusion_mode : {'centroid', 'intersection', 'combined'}
@@ -126,21 +166,26 @@ class MaskConfig(BaseModel):
         Whether to generate diagnostic plots.
     image_dir : str
         Directory for visualization outputs.
+    exclusion_bboxes : list of ExclusionBBoxConfig
+        Optional list of bounding boxes to exclude from the final mask
+        (e.g., remote islands like Andaman & Nicobar or Lakshadweep).
+        Cells whose centre falls inside any bbox are dropped.
     """
-    
+
     inclusion_mode: Literal["centroid", "intersection", "combined"] = "combined"
     fraction_threshold: float = Field(0.8, ge=0.0, le=1.0)
     dataset_prefix: str = "era5-world"
-    mask_dir: str = "data/geoBoundaries/masks/era5-world"
-    metadata_dir: str = "data/geoBoundaries/masks/mask_metadata"
+    mask_dir: str = "geoBoundaries/masks/era5-world"
+    metadata_dir: str = "geoBoundaries/masks/mask_metadata"
     generate_visualization: bool = True
-    image_dir: str = "data/geoBoundaries/images"
+    image_dir: str = "geoBoundaries/images"
+    exclusion_bboxes: List[ExclusionBBoxConfig] = Field(default_factory=list)
 
 
 class ADMEnrichmentConfig(BaseModel):
     """
     Administrative boundary enrichment configuration.
-    
+
     Attributes
     ----------
     enable_adm1 : bool
@@ -158,7 +203,7 @@ class ADMEnrichmentConfig(BaseModel):
     undefined_value : str
         Value to use for undefined/missing boundaries.
     """
-    
+
     enable_adm1: bool = True
     enable_adm2: bool = True
     adm1_name_field: str = "shapeName"
@@ -170,7 +215,7 @@ class ADMEnrichmentConfig(BaseModel):
 
 class GeographicConfig(BaseModel):
     """Complete geographic processing configuration."""
-    
+
     boundary: BoundaryConfig
     mask: MaskConfig
     adm_enrichment: ADMEnrichmentConfig
@@ -183,7 +228,7 @@ class GeographicConfig(BaseModel):
 class InterpolationConfig(BaseModel):
     """
     Temporal interpolation configuration.
-    
+
     Attributes
     ----------
     method : {'rate_shaped', 'linear', 'midpoint'}
@@ -193,7 +238,7 @@ class InterpolationConfig(BaseModel):
     clamp_unit_range : bool
         Clamp cloud/vegetation fields to [0, 1].
     """
-    
+
     method: Literal["rate_shaped", "linear", "midpoint"] = "rate_shaped"
     datetime_unit: Literal["ns", "us", "ms", "s"] = "us"
     clamp_unit_range: bool = True
@@ -202,7 +247,7 @@ class InterpolationConfig(BaseModel):
 class TimezoneConfig(BaseModel):
     """
     Timezone conversion configuration.
-    
+
     Attributes
     ----------
     target_timezone : str
@@ -210,14 +255,14 @@ class TimezoneConfig(BaseModel):
     keep_utc_column : bool
         Retain original UTC timestamp as separate column.
     """
-    
+
     target_timezone: str = "UTC"
     keep_utc_column: bool = False
 
 
 class TemporalConfig(BaseModel):
     """Complete temporal processing configuration."""
-    
+
     interpolation: InterpolationConfig
     timezone: TimezoneConfig
 
@@ -229,7 +274,7 @@ class TemporalConfig(BaseModel):
 class SpatialAggregationConfig(BaseModel):
     """
     Spatial aggregation configuration.
-    
+
     Attributes
     ----------
     level : {'ADM0', 'ADM1', 'ADM2'}
@@ -239,7 +284,7 @@ class SpatialAggregationConfig(BaseModel):
     output_format : {'parquet', 'csv', 'both'}
         Output file format(s).
     """
-    
+
     level: Literal["ADM0", "ADM1", "ADM2"] = "ADM0"
     weight_by_area: bool = True
     output_format: Literal["parquet", "csv", "both"] = "parquet"
@@ -248,13 +293,13 @@ class SpatialAggregationConfig(BaseModel):
 class TemporalAggregationConfig(BaseModel):
     """
     Temporal aggregation configuration.
-    
+
     Attributes
     ----------
     modes : list of str
         Aggregation modes (e.g., ['annual', 'monthly', 'quarterly']).
     """
-    
+
     modes: List[Literal["annual", "biannual", "quarterly", "monthly"]] = [
         "annual"
     ]
@@ -262,7 +307,7 @@ class TemporalAggregationConfig(BaseModel):
 
 class AggregationConfig(BaseModel):
     """Complete aggregation configuration."""
-    
+
     spatial: SpatialAggregationConfig
     temporal: TemporalAggregationConfig
 
@@ -274,7 +319,7 @@ class AggregationConfig(BaseModel):
 class DataPathsConfig(BaseModel):
     """
     Data input/output paths.
-    
+
     Attributes
     ----------
     grib_dir : str
@@ -286,11 +331,11 @@ class DataPathsConfig(BaseModel):
     processed_dir : str
         Directory for final processed outputs.
     """
-    
-    grib_dir: str = "data/era5-world/raw"
-    output_base: str = "data/era5-world/processed"
-    interim_dir: str = "data/era5-world/interim"
-    processed_dir: str = "data/era5-world/processed"
+
+    grib_dir: str = "era5-world/raw"
+    output_base: str = "era5-world/processed"
+    interim_dir: str = "era5-world/interim"
+    processed_dir: str = "era5-world/processed"
 
 
 # =============================================================================
@@ -300,9 +345,9 @@ class DataPathsConfig(BaseModel):
 class PipelineConfig(BaseModel):
     """
     Master configuration for the entire weather data processing pipeline.
-    
+
     This is the top-level schema that combines all sub-configurations.
-    
+
     Attributes
     ----------
     parallelization : ParallelizationConfig
@@ -317,25 +362,25 @@ class PipelineConfig(BaseModel):
         Temporal processing settings (None skips this step).
     aggregation : AggregationConfig or None
         Aggregation settings (None skips this step).
-    
+
     Examples
     --------
     >>> config = PipelineConfig.model_validate_json(json_str)
     >>> print(config.geographic.boundary.country_name)
     India
     """
-    
+
     parallelization: ParallelizationConfig = ParallelizationConfig()
     logging: LoggingConfig = LoggingConfig()
     data_paths: DataPathsConfig = DataPathsConfig()
     geographic: Optional[GeographicConfig] = None
     temporal: Optional[TemporalConfig] = None
     aggregation: Optional[AggregationConfig] = None
-    
+
     def save_to_file(self, path: Path) -> None:
         """Save configuration to JSON file."""
         path.write_text(self.model_dump_json(indent=2))
-    
+
     @classmethod
     def load_from_file(cls, path: Path) -> PipelineConfig:
         """Load configuration from JSON file."""
