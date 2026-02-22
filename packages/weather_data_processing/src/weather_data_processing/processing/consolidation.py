@@ -191,10 +191,11 @@ class ConsolidationProcessor:
         self,
         input_file: Path,
         output_file: Path,
-        overwrite: bool = True
+        overwrite: bool = True,
+        trim_to_month: Optional[Tuple[int, int]] = None,
     ) -> OptimizationResult:
         """
-        Optimize a single parquet file: filter, drop, cast, save.
+        Optimize a single parquet file: trim, drop, cast, save.
 
         Parameters
         ----------
@@ -204,6 +205,10 @@ class ConsolidationProcessor:
             Output cleaned parquet file.
         overwrite : bool, optional
             Overwrite existing output file.
+        trim_to_month : (year, month) tuple or None
+            If provided, drop rows whose ``time`` column falls outside
+            this calendar month. This removes the boundary null-rows that
+            ERA5 GRIB exports include from adjacent months.
 
         Returns
         -------
@@ -223,8 +228,25 @@ class ConsolidationProcessor:
 
         rows_before = df.select(pl.len()).collect().item()
 
-        # Step 1: Filter timestamps if needed
-        # (Assuming timestamps are already valid from Step 2)
+        # Step 1: Strict calendar-month trim.
+        # Drop any rows whose timestamp is outside the file's named month.
+        # ERA5 GRIB exports include a handful of boundary rows from adjacent
+        # months at file edges — these contain all-null values and must be
+        # removed before consolidation.
+        rows_trimmed = 0
+        if trim_to_month is not None:
+            trim_year, trim_month = trim_to_month
+            df = df.filter(
+                (pl.col("time").dt.year() == trim_year)
+                & (pl.col("time").dt.month() == trim_month)
+            )
+            rows_after_trim = df.select(pl.len()).collect().item()
+            rows_trimmed = rows_before - rows_after_trim
+            if rows_trimmed > 0:
+                self.logger.info(
+                    f"  Trimmed {rows_trimmed:,} out-of-month rows "
+                    f"from {input_file.name}"
+                )
 
         # Step 2: Drop unwanted columns
         cols_before_drop = df.collect_schema().names()
@@ -266,19 +288,20 @@ class ConsolidationProcessor:
 
         # Collect and write
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        df_final.collect().write_parquet(
+        df_collected = df_final.collect()
+        df_collected.write_parquet(
             output_file,
             compression="zstd",
             statistics=True
         )
 
-        rows_after = rows_before  # No row filtering in current implementation
+        rows_after = len(df_collected)
 
         dt = time.perf_counter() - t0
 
         self.logger.debug(
             f"  Optimized: {input_file.name} → {output_file.name} "
-            f"({rows_after:,} rows, {dt:.2f}s)"
+            f"({rows_after:,} rows, trimmed={rows_trimmed:,}, {dt:.2f}s)"
         )
 
         return OptimizationResult(

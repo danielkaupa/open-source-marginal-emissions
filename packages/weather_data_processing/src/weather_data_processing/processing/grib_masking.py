@@ -158,43 +158,66 @@ class GRIBMaskingProcessor:
         self.logger.debug("  Loading GRIB dataset...")
 
         ds = load_grib_dataset(grib_file, variables=variables)
-
-        # Extract timestamps
-        if "time" in ds.coords:
-            timestamps = ds["time"].values
-        elif "valid_time" in ds.coords:
-            timestamps = ds["valid_time"].values
-        else:
-            raise ValueError(f"No time coordinate found in {grib_file}")
+        var_names = list(ds.data_vars)
 
         dt = time.perf_counter() - t0
-        self.logger.debug(f"    Loaded in {dt:.2f}s: {list(ds.data_vars)}")
+        self.logger.debug(f"    Loaded in {dt:.2f}s: {var_names}")
 
         # ------------------------------------------------------------------
-        # Step 2: Process each timestep
+        # Step 2: Convert to long-form DataFrame all at once
+        #
+        # We use the reference script approach: ds.to_dataframe().reset_index()
+        # This avoids per-timestep .sel() loops, which cause timestamp
+        # corruption when numpy datetime64 values from cfgrib's internal
+        # representation are passed back as selection keys.
         # ------------------------------------------------------------------
-        dfs = []
+        t0 = time.perf_counter()
 
-        for ts in timestamps:
-            # Select timestep
-            if "time" in ds.dims:
-                ds_t = ds.sel(time=ts)
-            elif "valid_time" in ds.dims:
-                ds_t = ds.sel(valid_time=ts)
-            else:
-                ds_t = ds
-
-            # Convert to DataFrame with mask applied
-            df_t = grib_to_dataframe(ds_t, mask=self.mask, timestamp=ts)
-            dfs.append(df_t)
-
+        # ds.to_dataframe() on a (time, latitude, longitude) dataset produces
+        # a long-form DataFrame with a MultiIndex of (time, latitude, longitude).
+        # reset_index() promotes those to plain columns.
+        # This is identical to the reference script's approach and correctly
+        # inherits the pd.to_datetime() normalisation applied in
+        # _open_single_variable() — no post-hoc time fixup needed.
+        import pandas as pd
+        df_pd = ds.to_dataframe().reset_index()
+        n_timestamps = ds["time"].shape[0] if "time" in ds.dims else 1
         ds.close()
 
-        # Concatenate all timesteps
-        df = pl.concat(dfs)
+        # Drop cfgrib auxiliary coordinate columns that aren't useful downstream
+        # (step, surface level identifiers, forecast number, etc.)
+        drop_cols = [c for c in (
+            "step", "number", "surface", "depthBelowLandLayer",
+            "entireAtmosphere", "level", "valid_time",
+        ) if c in df_pd.columns]
+        if drop_cols:
+            df_pd = df_pd.drop(columns=drop_cols)
 
+        # Ensure time dtype is pandas Timestamp (not numpy datetime64 from cfgrib)
+        if "time" in df_pd.columns:
+            df_pd["time"] = pd.to_datetime(df_pd["time"])
+
+        df = pl.from_pandas(df_pd)
+
+        # Apply spatial mask — inner join on (latitude, longitude) exactly as
+        # the reference script does: lf.join(mask_lf, on=[lat, lon], how="inner")
+        df = df.join(
+            self.mask.select(["latitude", "longitude"]),
+            on=["latitude", "longitude"],
+            how="inner"
+        )
+        if "frac_in_region" in self.mask.columns:
+            df = df.join(
+                self.mask.select(["latitude", "longitude", "frac_in_region"]),
+                on=["latitude", "longitude"],
+                how="left"
+            )
+
+        dt = time.perf_counter() - t0
         rows_before = len(df)
-        self.logger.debug(f"  After masking: {rows_before:,} rows")
+        self.logger.debug(
+            f"    Converted + masked in {dt:.2f}s: {rows_before:,} rows"
+        )
 
         # ------------------------------------------------------------------
         # Step 3: ADM Enrichment (if configured)
@@ -251,10 +274,10 @@ class GRIBMaskingProcessor:
         return MaskingResult(
             output_file=output_file,
             input_file=grib_file,
-            rows_before_mask=len(self.mask) * len(timestamps),  # Full grid size
+            rows_before_mask=len(self.mask) * n_timestamps,
             rows_after_mask=rows_before,
             rows_after_adm=rows_after_adm,
-            variables=list(ds.data_vars) if ds else [],
+            variables=var_names,
             processing_time_s=dt_total,
             file_size_mb=file_size,
         )

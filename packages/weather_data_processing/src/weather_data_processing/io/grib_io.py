@@ -98,71 +98,138 @@ def extract_variable_metadata(grib_file: Path) -> Dict[str, Dict[str, Any]]:
     return metadata
 
 
+def _open_single_variable(grib_file: Path, shortname: str) -> xr.Dataset:
+    """
+    Open one variable from a GRIB file via cfgrib, correctly flattening
+    forecast-style (time, step, valid_time) to a plain time dimension.
+
+    This mirrors the reference implementation in step2a_mask_and_process_grib.py
+    and is the only safe way to load ERA5 variables that may have a step
+    dimension (e.g. accumulated fields or UV indices).
+
+    Parameters
+    ----------
+    grib_file : Path
+    shortname : str
+
+    Returns
+    -------
+    xr.Dataset with dims (time, latitude, longitude)
+    """
+    import warnings
+    import pandas as pd
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        ds = xr.open_dataset(
+            grib_file,
+            engine="cfgrib",
+            backend_kwargs={
+                "indexpath": "",
+                "filter_by_keys": {"shortName": shortname},
+            },
+        )
+
+    # Forecast-style: (time, step) → flatten to a single time axis using valid_time
+    if "step" in ds.dims and "valid_time" in ds.coords:
+        other_dims = [d for d in ds.dims if d not in ("time", "step")]
+        stacked = ds.stack(time_step=("time", "step"))
+        flat_time = pd.to_datetime(stacked["valid_time"].values.ravel())
+
+        vars_out = {}
+        for var_name, da in stacked.data_vars.items():
+            data = da.transpose("time_step", *other_dims).values
+            vars_out[var_name] = (["time", *other_dims], data)
+
+        coords = {"time": flat_time}
+        for dim in other_dims:
+            coords[dim] = ds[dim]
+
+        out = xr.Dataset(vars_out, coords=coords)
+        ds.close()
+        return out
+
+    # Analysis-style: ensure time is pandas DatetimeIndex
+    if "time" in ds.coords:
+        ds = ds.assign_coords(time=pd.to_datetime(ds["time"].values))
+
+    return ds
+
+
 def load_grib_dataset(
     grib_file: Path,
     variables: Optional[List[str]] = None,
-    squeeze: bool = True
+    squeeze: bool = True,
 ) -> xr.Dataset:
     """
     Load GRIB file as xarray Dataset.
+
+    Each variable is opened separately via ``filter_by_keys`` (which is the
+    only reliable way to handle ERA5 files that mix instantaneous and
+    forecast/accumulated fields with different time axes). The resulting
+    per-variable datasets are then merged.
 
     Parameters
     ----------
     grib_file : Path
         Path to GRIB file.
     variables : list of str, optional
-        If provided, only load these variables (by shortName).
-        If None, load all variables.
+        Specific shortNames to load.  If ``None``, all variables found in
+        the file are loaded (discovered via eccodes scan).
     squeeze : bool, optional
-        Squeeze singleton dimensions (default True).
+        Squeeze singleton dimensions after loading (default True).
 
     Returns
     -------
     xr.Dataset
-        Loaded dataset with all requested variables.
+        Merged dataset with all requested variables sharing a common
+        (time, latitude, longitude) structure.
 
     Examples
     --------
-    >>> ds = load_grib_dataset(
-    ...     Path("era5_2018-01.grib"),
-    ...     variables=["2t", "tp"]
-    ... )
-    >>> print(ds.data_vars)
+    >>> ds = load_grib_dataset(Path("era5_2018-01.grib"))
+    >>> print(list(ds.data_vars))
     """
     if variables is None:
-        # Load all variables
-        ds = xr.open_dataset(
-            grib_file,
-            engine="cfgrib",
-            backend_kwargs={"indexpath": ""}
-        )
+        # Discover all shortNames present in the file
+        meta = extract_variable_metadata(grib_file)
+        variables = sorted({v["shortName"] for v in meta.values()})
+
+    datasets = []
+    skipped = []
+    for shortname in variables:
+        try:
+            ds_var = _open_single_variable(grib_file, shortname)
+            datasets.append(ds_var)
+        except Exception as e:
+            skipped.append((shortname, str(e)))
+
+    if skipped:
+        import warnings
+        for sn, reason in skipped:
+            warnings.warn(
+                f"load_grib_dataset: skipping '{sn}' from {grib_file.name}: {reason}",
+                stacklevel=2,
+            )
+
+    if not datasets:
+        raise ValueError(f"No variables could be loaded from {grib_file}")
+
+    if len(datasets) == 1:
+        ds = datasets[0]
     else:
-        # Load specific variables
-        datasets = []
-        for var in variables:
-            try:
-                ds_var = xr.open_dataset(
-                    grib_file,
-                    engine="cfgrib",
-                    backend_kwargs={
-                        "indexpath": "",
-                        "filter_by_keys": {"shortName": var}
-                    }
-                )
-                datasets.append(ds_var)
-            except Exception:
-                # Variable not in file, skip
-                continue
+        ds = xr.merge(
+            datasets,
+            combine_attrs="override",
+            compat="override",
+            join="outer",
+        )
+        for d in datasets:
+            d.close()
 
-        if not datasets:
-            raise ValueError(f"None of the requested variables found in {grib_file}")
-
-        # Merge all variables
-        ds = xr.merge(datasets)
-
-    if squeeze:
-        ds = ds.squeeze(drop=True)
-
+    # Note: do NOT squeeze here. Squeezing can collapse the time dimension
+    # on single-timestep files, turning (time, lat, lon) → (lat, lon) and
+    # making ds.to_dataframe() produce a flat table with no time index.
     return ds
 
 
@@ -274,23 +341,51 @@ def grib_to_dataframe(
     if timestamp is not None:
         data_dict["time"] = [timestamp] * len(lats_flat)
 
-    # Extract data variables
+    n_cells = len(lats_flat)
+
+    # Extract data variables — skip any whose shape is inconsistent with the
+    # spatial grid (e.g. 6-hourly accumulated fields mixed into a mostly
+    # hourly dataset after cfgrib merging).
+    skipped_vars = []
     for var_name in ds.data_vars:
         var_data = ds[var_name].values
 
         # Handle different dimensionalities
         if var_data.ndim == 0:
-            # Scalar
-            data_dict[var_name] = [float(var_data)] * len(lats_flat)
+            # Scalar — broadcast to all cells
+            data_dict[var_name] = [float(var_data)] * n_cells
+
         elif var_data.ndim == 1:
-            # 1D - broadcast
-            data_dict[var_name] = np.repeat(var_data, len(lats_flat) // len(var_data))
+            if len(var_data) == n_cells:
+                data_dict[var_name] = var_data
+            else:
+                skipped_vars.append((var_name, var_data.shape, "1D length mismatch"))
+
         elif var_data.ndim == 2:
-            # 2D - flatten
-            data_dict[var_name] = var_data.ravel()
+            flat = var_data.ravel()
+            if len(flat) == n_cells:
+                data_dict[var_name] = flat
+            else:
+                skipped_vars.append((var_name, var_data.shape, "2D flat length mismatch"))
+
         else:
-            # Higher dimensions - take first time slice if needed
-            data_dict[var_name] = var_data.reshape(-1, var_data.shape[-1]).ravel()
+            # ≥3D: the last two dims should be (lat, lon), first dim(s) are time/level.
+            # Take only the slice that matches the spatial grid.
+            spatial_size = var_data.shape[-2] * var_data.shape[-1]
+            if spatial_size == n_cells:
+                # Reshape to (n_time_levels, n_cells) and take first slice
+                data_dict[var_name] = var_data.reshape(-1, spatial_size)[0]
+            else:
+                skipped_vars.append((var_name, var_data.shape, "3D+ spatial mismatch"))
+
+    if skipped_vars:
+        import warnings
+        for vname, vshape, reason in skipped_vars:
+            warnings.warn(
+                f"grib_to_dataframe: skipping variable '{vname}' "
+                f"(shape={vshape}, reason={reason}, grid_cells={n_cells})",
+                stacklevel=2,
+            )
 
     df = pl.DataFrame(data_dict)
 

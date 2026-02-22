@@ -1,12 +1,12 @@
 #!/bin/bash
 # =============================================================================
-# Step 2: GRIB Masking (Sequential - for local testing)
+# Step 1: Geographic Processing (Sequential - for local use)
 # =============================================================================
 #
-# This script runs Step 2 sequentially on a local machine.
-# Suitable for testing or processing small batches.
+# This script runs Step 1 (geographic boundary extraction and mask generation)
+# sequentially on a local machine.
 #
-# For HPC with MPI, use pbs_step2_masking_mpi.sh instead.
+# For HPC with MPI, use the appropriate pbs_ script instead.
 # =============================================================================
 
 set -euo pipefail

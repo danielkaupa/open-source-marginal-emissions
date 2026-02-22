@@ -1,3 +1,4 @@
+# open-source-marginal-emissions/pyproject.toml
 [build-system]
 requires = ["setuptools>=70", "wheel", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
@@ -26,7 +27,7 @@ dependencies = [
   "aiohttp>=3.8.0",
 
   # configuration and utilities
-  "pydantic>=1.9.0",
+  "pydantic>=2.0.0",
   "python-dotenv>=0.19.0",
   "pyyaml>=6.0",
   "tqdm>=4.66",

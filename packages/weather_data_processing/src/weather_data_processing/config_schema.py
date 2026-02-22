@@ -25,6 +25,31 @@ from pydantic import BaseModel, Field, field_validator
 
 
 # =============================================================================
+# Exclusion Bounding Box
+# =============================================================================
+
+class ExclusionBBox(BaseModel):
+    """
+    Bounding box to exclude from a mask.
+
+    Attributes
+    ----------
+    name : str
+        Human-readable label for the exclusion zone (e.g. "andaman_nicobar").
+    lon_min, lon_max : float
+        Longitude bounds in degrees East.
+    lat_min, lat_max : float
+        Latitude bounds in degrees North.
+    """
+
+    name: str
+    lon_min: float
+    lon_max: float
+    lat_min: float
+    lat_max: float
+
+
+# =============================================================================
 # Parallelization Configuration
 # =============================================================================
 
@@ -107,45 +132,6 @@ class BoundaryConfig(BaseModel):
     country_field: str = "shapeName"
 
 
-class ExclusionBBoxConfig(BaseModel):
-    """
-    Bounding box defining a region to exclude from the mask.
-
-    Attributes
-    ----------
-    name : str
-        Human-readable label for the exclusion zone (e.g., "andaman_nicobar").
-    lon_min : float
-        Western boundary (degrees).
-    lon_max : float
-        Eastern boundary (degrees).
-    lat_min : float
-        Southern boundary (degrees).
-    lat_max : float
-        Northern boundary (degrees).
-    """
-
-    name: str
-    lon_min: float
-    lon_max: float
-    lat_min: float
-    lat_max: float
-
-    @field_validator("lon_min", "lon_max")
-    @classmethod
-    def validate_longitude(cls, v: float) -> float:
-        if not (-180.0 <= v <= 180.0):
-            raise ValueError(f"Longitude {v} is outside [-180, 180]")
-        return v
-
-    @field_validator("lat_min", "lat_max")
-    @classmethod
-    def validate_latitude(cls, v: float) -> float:
-        if not (-90.0 <= v <= 90.0):
-            raise ValueError(f"Latitude {v} is outside [-90, 90]")
-        return v
-
-
 class MaskConfig(BaseModel):
     """
     Mask generation configuration.
@@ -166,10 +152,8 @@ class MaskConfig(BaseModel):
         Whether to generate diagnostic plots.
     image_dir : str
         Directory for visualization outputs.
-    exclusion_bboxes : list of ExclusionBBoxConfig
-        Optional list of bounding boxes to exclude from the final mask
-        (e.g., remote islands like Andaman & Nicobar or Lakshadweep).
-        Cells whose centre falls inside any bbox are dropped.
+    exclusion_bboxes : list of ExclusionBBox
+        Bounding boxes to exclude from the mask (e.g. remote islands).
     """
 
     inclusion_mode: Literal["centroid", "intersection", "combined"] = "combined"
@@ -179,7 +163,7 @@ class MaskConfig(BaseModel):
     metadata_dir: str = "geoBoundaries/masks/mask_metadata"
     generate_visualization: bool = True
     image_dir: str = "geoBoundaries/images"
-    exclusion_bboxes: List[ExclusionBBoxConfig] = Field(default_factory=list)
+    exclusion_bboxes: List[ExclusionBBox] = Field(default_factory=list)
 
 
 class ADMEnrichmentConfig(BaseModel):
@@ -188,10 +172,16 @@ class ADMEnrichmentConfig(BaseModel):
 
     Attributes
     ----------
+    enable_adm0 : bool
+        Stamp ADM0 (country-level) name/code columns (no spatial join needed).
     enable_adm1 : bool
         Add ADM1 (state/province) columns.
     enable_adm2 : bool
         Add ADM2 (district/county) columns.
+    adm0_name_field : str
+        Field in ADM0 shapefile for country names.
+    adm0_code_field : str or None
+        Field in ADM0 shapefile for ISO codes (e.g. shapeGroup for ISO3).
     adm1_name_field : str
         Field in ADM1 shapefile for names.
     adm2_name_field : str
@@ -204,8 +194,11 @@ class ADMEnrichmentConfig(BaseModel):
         Value to use for undefined/missing boundaries.
     """
 
+    enable_adm0: bool = True
     enable_adm1: bool = True
     enable_adm2: bool = True
+    adm0_name_field: str = "shapeName"
+    adm0_code_field: Optional[str] = "shapeGroup"
     adm1_name_field: str = "shapeName"
     adm2_name_field: str = "shapeName"
     adm1_code_field: Optional[str] = "shapeISO"
@@ -217,7 +210,7 @@ class GeographicConfig(BaseModel):
     """Complete geographic processing configuration."""
 
     boundary: BoundaryConfig
-    mask: MaskConfig
+    masks: List[MaskConfig]
     adm_enrichment: ADMEnrichmentConfig
 
 
@@ -290,14 +283,14 @@ class SpatialAggregationConfig(BaseModel):
     output_format: Literal["parquet", "csv", "both"] = "parquet"
 
 
-class TemporalAggregationConfig(BaseModel):
+class TemporalPartitioningConfig(BaseModel):
     """
-    Temporal aggregation configuration.
+    Temporal partitioning configuration.
 
     Attributes
     ----------
     modes : list of str
-        Aggregation modes (e.g., ['annual', 'monthly', 'quarterly']).
+        Partition modes (e.g., ['annual', 'monthly', 'quarterly']).
     """
 
     modes: List[Literal["annual", "biannual", "quarterly", "monthly"]] = [
@@ -309,7 +302,6 @@ class AggregationConfig(BaseModel):
     """Complete aggregation configuration."""
 
     spatial: SpatialAggregationConfig
-    temporal: TemporalAggregationConfig
 
 
 # =============================================================================
@@ -360,6 +352,8 @@ class PipelineConfig(BaseModel):
         Geographic processing settings (None skips this step).
     temporal : TemporalConfig or None
         Temporal processing settings (None skips this step).
+    temporal_partitioning : TemporalPartitioningConfig or None
+        Temporal partitioning settings (None skips this step).
     aggregation : AggregationConfig or None
         Aggregation settings (None skips this step).
 
@@ -375,6 +369,7 @@ class PipelineConfig(BaseModel):
     data_paths: DataPathsConfig = DataPathsConfig()
     geographic: Optional[GeographicConfig] = None
     temporal: Optional[TemporalConfig] = None
+    temporal_partitioning: Optional[TemporalPartitioningConfig] = None
     aggregation: Optional[AggregationConfig] = None
 
     def save_to_file(self, path: Path) -> None:

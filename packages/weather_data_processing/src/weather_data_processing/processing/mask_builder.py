@@ -38,40 +38,59 @@ import xarray as xr
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 
-from ..config_schema import MaskConfig
+from ..config_schema import MaskConfig, GeographicConfig
 from ..utils.logging import VerboseLogger
 
 from osme_common.paths import repo_root, data_dir, resolve_under
 
 
 @dataclass
-class MaskResult:
-    """
-    Result of mask generation.
-
-    Attributes
-    ----------
-    mask_file : Path
-        Path to the generated mask parquet file.
-    metadata_file : Path
-        Path to the metadata JSON file.
-    row_count : int
-        Number of grid cells in the mask.
-    bbox : dict
-        Bounding box of the masked region.
-    generated_at : str
-        ISO timestamp of generation.
-    visualization_file : Path or None
-        Path to diagnostic plot (if generated).
-    """
-
+class SingleMaskResult:
+    """Result for one inclusion-mode mask."""
     mask_file: Path
     metadata_file: Path
+    mask_config: MaskConfig
+    df_masked: Any            # pl.DataFrame kept in memory for visualisation
     row_count: int
     bbox: Dict[str, float]
     generated_at: str
-    visualization_file: Optional[Path] = None        # 6-panel diagnostic overview
-    visualization_file_2: Optional[Path] = None      # 2-panel masked-cells detail
+
+
+@dataclass
+class MaskResult:
+    """
+    Aggregated result of mask generation for all configured inclusion modes.
+
+    Attributes
+    ----------
+    masks : list of SingleMaskResult
+        One entry per MaskConfig in geographic.masks.
+    visualization_overview : Path or None
+        Combined overview figure (N×3 grid, one row per mask).
+    visualization_details : list of Path
+        Per-mask detail figures (one per MaskConfig).
+    """
+    masks: List[Any]                             # List[SingleMaskResult]
+    visualization_overview: Optional[Path] = None
+    visualization_details: List[Path] = None
+
+    # Convenience: expose first mask's file/count for callers that expect
+    # the old single-mask interface
+    @property
+    def mask_file(self) -> Optional[Path]:
+        return self.masks[0].mask_file if self.masks else None
+
+    @property
+    def row_count(self) -> int:
+        return self.masks[0].row_count if self.masks else 0
+
+    @property
+    def visualization_file(self) -> Optional[Path]:
+        return self.visualization_overview
+
+    def __post_init__(self):
+        if self.visualization_details is None:
+            self.visualization_details = []
 
 
 class MaskBuilder:
@@ -108,12 +127,27 @@ class MaskBuilder:
 
     def __init__(
         self,
-        config: MaskConfig,
+        configs: List[MaskConfig],
         boundary_file: Path,
         grib_dir: Path,
         logger: Optional[VerboseLogger] = None,
     ):
-        self.config = config
+        """
+        Parameters
+        ----------
+        configs : list of MaskConfig
+            One MaskConfig per inclusion mode to run.
+        boundary_file : Path
+            Path to GeoJSON file containing country boundary.
+        grib_dir : Path
+            Directory containing sample GRIB files for grid extraction.
+        logger : VerboseLogger, optional
+        """
+        if not configs:
+            raise ValueError("At least one MaskConfig must be provided")
+        self.configs = configs
+        # Convenience: first config drives shared settings (dirs, dataset_prefix)
+        self.config = configs[0]
         self.boundary_file = boundary_file
         self.grib_dir = grib_dir
         self.logger = logger or VerboseLogger("mask_builder", verbose=False)
@@ -124,7 +158,7 @@ class MaskBuilder:
         if not grib_dir.exists():
             raise FileNotFoundError(f"GRIB directory not found: {grib_dir}")
 
-        # Load boundary geometry
+        # Load boundary geometry once (shared across all configs)
         self.boundary_geom = self._load_boundary()
 
     def _load_boundary(self) -> MultiPolygon:
@@ -277,12 +311,34 @@ class MaskBuilder:
 
         return df_filtered
 
+    # Equal-area CRS for fractional area computation
+    _EA_CRS = "EPSG:6933"
+
     def _apply_mask(
         self,
         df_grid: pl.DataFrame
     ) -> pl.DataFrame:
         """
         Apply spatial mask to grid based on inclusion mode.
+
+        Modes
+        -----
+        centroid
+            Keep a cell if its centre point lies inside the boundary.
+            Fast. Conservative at borders — a cell that is 99% inside
+            but whose centre is just outside will be dropped.
+
+        intersection
+            Keep a cell if any part of it touches the boundary.
+            Most inclusive — picks up all border cells regardless of
+            how little of the cell is actually inside the country.
+
+        combined
+            Compute the true fractional overlap between each grid cell
+            polygon and the boundary (in an equal-area projection), then
+            keep cells whose overlap >= fraction_threshold. This is the
+            most accurate mode and the only one where fraction_threshold
+            has a real effect.
 
         Parameters
         ----------
@@ -292,128 +348,179 @@ class MaskBuilder:
         Returns
         -------
         pl.DataFrame
-            Filtered grid with additional 'frac_in_region' column.
+            Filtered grid with an added 'frac_in_region' column
+            (always 0.0 or 1.0 for centroid/intersection; a true
+            fraction for combined).
         """
+        import shapely
+        import numpy as np
+
         t0 = time.perf_counter()
+        mode = self.config.inclusion_mode
+        threshold = self.config.fraction_threshold
         self.logger.info(
-            f"Applying mask (mode={self.config.inclusion_mode}, "
-            f"threshold={self.config.fraction_threshold})"
+            f"Applying mask (mode={mode}"
+            + (f", threshold={threshold}" if mode == "combined" else "")
+            + ")"
         )
 
-        # Convert to GeoDataFrame
-        geometry = [
-            Point(row["longitude"], row["latitude"])
-            for row in df_grid.iter_rows(named=True)
-        ]
+        lats = df_grid["latitude"].to_numpy()
+        lons = df_grid["longitude"].to_numpy()
 
-        gdf_grid = gpd.GeoDataFrame(
-            df_grid.to_pandas(),
-            geometry=geometry,
-            crs="EPSG:4326"
-        )
+        # --- Centroid points (used by all modes) --------------------------
+        centroids = shapely.points(lons, lats)
 
-        if self.config.inclusion_mode == "centroid":
-            # Include if centroid is within boundary
-            mask = gdf_grid.within(self.boundary_geom)
-            gdf_grid["frac_in_region"] = mask.astype(float)
+        if mode == "centroid":
+            inside = shapely.within(centroids, self.boundary_geom)
+            frac_vals = inside.astype(float)
+            keep = inside
 
-        elif self.config.inclusion_mode == "intersection":
-            # Include if any intersection exists
-            mask = gdf_grid.intersects(self.boundary_geom)
-            gdf_grid["frac_in_region"] = mask.astype(float)
+        elif mode == "intersection":
+            # Infer cell half-size from grid spacing
+            dlat = float(np.abs(np.diff(np.unique(lats))).min()) / 2.0
+            dlon = float(np.abs(np.diff(np.unique(lons))).min()) / 2.0
+            cell_polys = shapely.box(
+                lons - dlon, lats - dlat,
+                lons + dlon, lats + dlat,
+            )
+            intersects = shapely.intersects(cell_polys, self.boundary_geom)
+            frac_vals = intersects.astype(float)
+            keep = intersects
 
-        elif self.config.inclusion_mode == "combined":
-            # Compute fractional overlap
-            # This is simplified - real implementation would compute cell polygons
-            # and intersection areas
-            centroid_mask = gdf_grid.within(self.boundary_geom)
-            intersect_mask = gdf_grid.intersects(self.boundary_geom)
+        elif mode == "combined":
+            # True fractional overlap in equal-area projection
+            dlat = float(np.abs(np.diff(np.unique(lats))).min()) / 2.0
+            dlon = float(np.abs(np.diff(np.unique(lons))).min()) / 2.0
+            cell_polys = shapely.box(
+                lons - dlon, lats - dlat,
+                lons + dlon, lats + dlat,
+            )
 
-            # Approximate: centroid=1.0, edge=threshold
-            frac = centroid_mask.astype(float)
-            frac = frac.where(frac > 0, intersect_mask.astype(float) * self.config.fraction_threshold)
+            # First pass: restrict to cells that intersect at all (fast cull)
+            intersects = shapely.intersects(cell_polys, self.boundary_geom)
+            candidate_polys = cell_polys[intersects]
 
-            gdf_grid["frac_in_region"] = frac
-            mask = frac >= self.config.fraction_threshold
+            # Project to equal-area CRS for accurate area calculations
+            gdf_cells = gpd.GeoSeries(candidate_polys, crs="EPSG:4326").to_crs(self._EA_CRS)
+            region_ea = gpd.GeoSeries([self.boundary_geom], crs="EPSG:4326").to_crs(self._EA_CRS).iloc[0]
+
+            cells_ea = np.asarray(gdf_cells)    # numpy array of shapely geoms
+            cell_areas = shapely.area(cells_ea)
+            inter_areas = shapely.area(shapely.intersection(cells_ea, region_ea))
+
+            frac_candidate = np.where(cell_areas > 0, inter_areas / cell_areas, 0.0)
+            frac_candidate = frac_candidate.clip(0.0, 1.0)
+
+            # Map fractions back to full grid
+            frac_vals = np.zeros(len(lats), dtype=float)
+            frac_vals[intersects] = frac_candidate
+            keep = frac_vals >= threshold
 
         else:
-            raise ValueError(f"Unknown inclusion mode: {self.config.inclusion_mode}")
+            raise ValueError(f"Unknown inclusion mode: {mode}")
 
-        # Filter and convert back
-        gdf_masked = gdf_grid[mask].drop(columns=["geometry"])
-        df_masked = pl.from_pandas(gdf_masked)
+        # Build output dataframe
+        import numpy as np
+        df_out = (
+            df_grid
+            .with_columns(pl.Series("frac_in_region", frac_vals))
+            .with_columns(pl.Series("_keep", keep.astype(bool)))
+            .filter(pl.col("_keep"))
+            .drop("_keep")
+        )
 
         dt = time.perf_counter() - t0
         self.logger.info(
-            f"  Mask applied: {len(df_masked)}/{len(df_grid)} cells retained "
-            f"({100*len(df_masked)/len(df_grid):.1f}%) in {dt:.2f}s"
+            f"  Mask applied: {len(df_out)}/{len(df_grid)} cells retained "
+            f"({100*len(df_out)/max(len(df_grid),1):.1f}%) in {dt:.2f}s"
         )
 
-        return df_masked
+        return df_out
 
-    def _generate_mask_id(self) -> str:
-        """Generate unique mask identifier based on configuration."""
-        config_str = (
-            f"{self.config.inclusion_mode}_{self.config.fraction_threshold}_"
-            f"{self.boundary_file.stem}"
-        )
-        hash_obj = hashlib.md5(config_str.encode())
-        return hash_obj.hexdigest()[:6]
-
-    def _build_output_paths(
-        self,
-        country_name: str,
-        row_count: int
-    ) -> tuple[Path, Path, Optional[Path], Optional[Path]]:
+    def _generate_mask_id(self, config: Optional[MaskConfig] = None) -> str:
         """
-        Build output file paths.
+        Generate a short config-based identifier for a mask.
+
+        The hash is derived solely from the mask *settings* (inclusion mode,
+        fraction threshold, boundary file stem) — not from the data — so the
+        same settings always produce the same token regardless of how many cells
+        happen to be inside the boundary.
+
+        Parameters
+        ----------
+        config : MaskConfig or None
+            Config to hash.  Defaults to ``self.config`` if not provided.
 
         Returns
         -------
-        tuple of Path
-            (mask_file, metadata_file, viz_file_overview, viz_file_detail)
+        str
+            6-character lowercase hex digest.
+        """
+        cfg = config if config is not None else self.config
+        config_str = (
+            f"{cfg.inclusion_mode}_{cfg.fraction_threshold}_"
+            f"{self.boundary_file.stem}"
+        )
+        hash_obj = hashlib.md5(config_str.encode())
+        return hash_obj.hexdigest()[:8]
+
+    def _build_output_paths(
+        self,
+        config: MaskConfig,
+        country_name: str,
+        config_hash: str,
+    ) -> tuple[Path, Path, Optional[Path]]:
+        """
+        Build output paths for a single MaskConfig.
+
+        The ``config_hash`` is a short hex digest derived from the mask settings
+        (inclusion mode, threshold, boundary file).  It disambiguates mask files
+        generated with different settings for the same country, and is carried
+        forward into masked-parquet filenames in Step 2 so every downstream file
+        can be traced back to the mask that produced it.
+
+        Returns (mask_file, metadata_file, viz_detail_file)
         """
         country_token = country_name.upper().replace(" ", "_")
 
-        if self.config.inclusion_mode == "combined":
-            mode_str = f"combined{self.config.fraction_threshold}"
+        if config.inclusion_mode == "combined":
+            mode_str = f"combined{config.fraction_threshold}"
         else:
-            mode_str = self.config.inclusion_mode
+            mode_str = config.inclusion_mode
 
         base_name = (
-            f"{self.config.dataset_prefix}_{country_token}_mask_"
-            f"{mode_str}_{row_count}"
+            f"{config.dataset_prefix}_{country_token}_mask_{mode_str}_{config_hash}"
         )
-        base = repo_root()
+        base = data_dir()
 
-        mask_dir = resolve_under(base, self.config.mask_dir)
-        meta_dir = resolve_under(base, self.config.metadata_dir)
-        img_dir = resolve_under(base, self.config.image_dir)
+        mask_dir  = resolve_under(base, config.mask_dir)
+        meta_dir  = resolve_under(base, config.metadata_dir)
+        img_dir   = resolve_under(base, config.image_dir)
 
         mask_dir.mkdir(parents=True, exist_ok=True)
         meta_dir.mkdir(parents=True, exist_ok=True)
-
-        if self.config.generate_visualization:
+        if config.generate_visualization:
             img_dir.mkdir(parents=True, exist_ok=True)
 
-        mask_file = mask_dir / f"{base_name}.parquet"
+        mask_file     = mask_dir / f"{base_name}.parquet"
         metadata_file = meta_dir / f"{base_name}.json"
+        viz_detail    = (img_dir / f"{base_name}_detail.png") if config.generate_visualization else None
 
-        if self.config.generate_visualization:
-            viz_overview = img_dir / f"{base_name}_overview.png"
-            viz_detail   = img_dir / f"{base_name}_detail.png"
-        else:
-            viz_overview = None
-            viz_detail   = None
+        return mask_file, metadata_file, viz_detail
 
-        return mask_file, metadata_file, viz_overview, viz_detail
+    def _build_overview_path(self, country_name: str) -> Path:
+        """Build path for the shared overview figure."""
+        country_token = country_name.upper().replace(" ", "_")
+        img_dir = resolve_under(data_dir(), self.config.image_dir)
+        img_dir.mkdir(parents=True, exist_ok=True)
+        return img_dir / f"{self.config.dataset_prefix}_{country_token}_mask_overview.png"
 
     def generate_mask(
         self,
         country_name: str
     ) -> MaskResult:
         """
-        Generate the complete mask.
+        Generate masks for all configured inclusion modes.
 
         Parameters
         ----------
@@ -423,66 +530,94 @@ class MaskBuilder:
         Returns
         -------
         MaskResult
-            Result object containing paths and metadata.
+            Aggregated result containing one SingleMaskResult per config,
+            plus paths to the overview and per-mask detail visualisations.
         """
         t_total = time.perf_counter()
         self.logger.info("=" * 72, force=True)
-        self.logger.info("GENERATING GEOGRAPHIC MASK", force=True)
+        self.logger.info(
+            f"GENERATING GEOGRAPHIC MASKS ({len(self.configs)} config(s))",
+            force=True
+        )
         self.logger.info("=" * 72, force=True)
 
-        # Step 1: Extract grid
+        # Step 1: Extract grid once (shared across all configs)
         df_grid = self._extract_grid_from_grib()
 
-        # Step 2: Apply inclusion mask
-        df_masked = self._apply_mask(df_grid)
+        single_results: List[SingleMaskResult] = []
 
-        # Step 2b: Apply exclusion bounding boxes
-        df_masked = self._apply_exclusions(df_masked)
+        for i, cfg in enumerate(self.configs, 1):
+            self.logger.info(
+                f"  [{i}/{len(self.configs)}] mode={cfg.inclusion_mode}  "
+                f"threshold={cfg.fraction_threshold}",
+                force=True
+            )
 
-        # Step 3: Build output paths
-        mask_file, metadata_file, viz_overview, viz_detail = self._build_output_paths(
-            country_name=country_name,
-            row_count=len(df_masked)
-        )
+            # Temporarily swap active config for _apply_mask / _apply_exclusions
+            self.config = cfg
 
-        # Step 4: Save mask
-        self.logger.info(f"Saving mask to {mask_file.name}")
-        df_masked.write_parquet(mask_file)
+            df_masked = self._apply_mask(df_grid)
+            df_masked = self._apply_exclusions(df_masked)
 
-        # Step 5: Generate metadata
-        bounds = df_masked.select([
-            pl.col("latitude").min().alias("lat_min"),
-            pl.col("latitude").max().alias("lat_max"),
-            pl.col("longitude").min().alias("lon_min"),
-            pl.col("longitude").max().alias("lon_max"),
-        ]).to_dicts()[0]
+            # Config-based hash — same settings → same token, always.
+            config_hash = self._generate_mask_id(cfg)
 
-        metadata = {
-            "dataset_prefix": self.config.dataset_prefix,
-            "country_token": country_name.upper().replace(" ", "_"),
-            "country_name": country_name,
-            "boundary_path": str(self.boundary_file),
-            "inclusion_mode": self.config.inclusion_mode,
-            "fraction_threshold": self.config.fraction_threshold,
-            "exclusion_bboxes": [bbox.model_dump() for bbox in self.config.exclusion_bboxes],
-            "row_count": len(df_masked),
-            "bbox": bounds,
-            "generated_at": datetime.utcnow().isoformat() + "Z",
-        }
+            mask_file, metadata_file, viz_detail_path = self._build_output_paths(
+                config=cfg,
+                country_name=country_name,
+                config_hash=config_hash,
+            )
 
-        self.logger.info(f"Saving metadata to {metadata_file.name}")
-        metadata_file.write_text(json.dumps(metadata, indent=2))
+            # Save mask parquet
+            self.logger.info(f"    Saving mask → {mask_file.name}")
+            df_masked.write_parquet(mask_file)
 
-        # Step 6: Optional visualization
-        viz_path_overview = None
-        viz_path_detail   = None
-        if self.config.generate_visualization and viz_overview and viz_detail:
-            self.logger.info("Generating visualizations...")
-            viz_path_overview, viz_path_detail = self._generate_visualization(
-                df_grid=df_grid,
+            # Save metadata
+            bounds = df_masked.select([
+                pl.col("latitude").min().alias("lat_min"),
+                pl.col("latitude").max().alias("lat_max"),
+                pl.col("longitude").min().alias("lon_min"),
+                pl.col("longitude").max().alias("lon_max"),
+            ]).to_dicts()[0]
+
+            metadata = {
+                "dataset_prefix": cfg.dataset_prefix,
+                "country_token": country_name.upper().replace(" ", "_"),
+                "country_name": country_name,
+                "boundary_path": str(self.boundary_file),
+                "inclusion_mode": cfg.inclusion_mode,
+                "fraction_threshold": cfg.fraction_threshold,
+                "exclusion_bboxes": [bbox.model_dump() for bbox in cfg.exclusion_bboxes],
+                "mask_uid": config_hash,
+                "row_count": len(df_masked),
+                "bbox": bounds,
+                "generated_at": datetime.utcnow().isoformat() + "Z",
+            }
+            metadata_file.write_text(json.dumps(metadata, indent=2))
+            self.logger.info(f"    Saving metadata → {metadata_file.name}")
+
+            single_results.append(SingleMaskResult(
+                mask_file=mask_file,
+                metadata_file=metadata_file,
+                mask_config=cfg,
                 df_masked=df_masked,
-                viz_overview=viz_overview,
-                viz_detail=viz_detail,
+                row_count=len(df_masked),
+                bbox=bounds,
+                generated_at=metadata["generated_at"],
+            ))
+
+        # Restore first config as the "primary"
+        self.config = self.configs[0]
+
+        # Step: Visualisations
+        viz_overview_path = None
+        viz_detail_paths: List[Path] = []
+
+        if any(cfg.generate_visualization for cfg in self.configs):
+            self.logger.info("Generating visualisations...", force=True)
+            viz_overview_path, viz_detail_paths = self._generate_visualization(
+                df_grid=df_grid,
+                single_results=single_results,
                 country_name=country_name,
             )
 
@@ -492,37 +627,33 @@ class MaskBuilder:
         self.logger.info("=" * 72, force=True)
 
         return MaskResult(
-            mask_file=mask_file,
-            metadata_file=metadata_file,
-            row_count=len(df_masked),
-            bbox=bounds,
-            generated_at=metadata["generated_at"],
-            visualization_file=viz_path_overview,
-            visualization_file_2=viz_path_detail,
+            masks=single_results,
+            visualization_overview=viz_overview_path,
+            visualization_details=viz_detail_paths,
         )
 
     def _generate_visualization(
         self,
         df_grid: pl.DataFrame,
-        df_masked: pl.DataFrame,
-        viz_overview: Path,
-        viz_detail: Path,
+        single_results: List[SingleMaskResult],
         country_name: str,
-    ) -> tuple[Path, Path]:
+    ) -> tuple[Optional[Path], List[Path]]:
         """
-        Generate two diagnostic visualisations.
+        Generate visualisations for all masks.
 
-        Figure 1 (overview, 2×3 grid):
-            [0,0] Label panel – dataset / country / inclusion settings
-            [0,1] Country boundary only
-            [0,2] All grid points (no boundary)
-            [1,0] All grid points + boundary overlay
-            [1,1] Masked grid points + boundary overlay
-            [1,2] Masked grid points only (no boundary)
+        Overview figure (N rows × 3 cols, where N = number of masks):
+            Row 0 (shared grid context):
+                [0,0] Country boundary only
+                [0,1] All grid points
+                [0,2] All grid points + boundary
+            Rows 1..N (one per mask):
+                [r,0] Text summary for this mask
+                [r,1] Masked grid points only
+                [r,2] Masked grid points + boundary
 
-        Figure 2 (detail, 1×2 grid):
-            [0,0] Masked grid points + boundary overlay
-            [0,1] Masked grid points only (no boundary)
+        Detail figures (one per mask):
+            Left:  Masked grid points + boundary
+            Right: Masked grid points only
         """
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
@@ -537,28 +668,21 @@ class MaskBuilder:
 
         all_lons = df_grid["longitude"].to_numpy()
         all_lats = df_grid["latitude"].to_numpy()
-        mask_lons = df_masked["longitude"].to_numpy()
-        mask_lats = df_masked["latitude"].to_numpy()
 
-        # Bounding box with a little padding
         pad = 1.0
-        lon_min, lon_max = all_lons.min() - pad, all_lons.max() + pad
-        lat_min, lat_max = all_lats.min() - pad, all_lats.max() + pad
+        lon_min = all_lons.min() - pad
+        lon_max = all_lons.max() + pad
+        lat_min = all_lats.min() - pad
+        lat_max = all_lats.max() + pad
 
-        # Colours / sizes
         C_BOUNDARY  = "#CC2200"
         C_ALL_PTS   = "#4477AA"
-        C_MASK_PTS  = "#228833"
-        PT_SIZE_ALL  = 2
-        PT_SIZE_MASK = 3
-        PT_ALPHA     = 0.55
-        BND_LW       = 1.2
+        BND_LW      = 1.2
+        PT_SIZE_ALL = 2
+        PT_ALPHA    = 0.55
 
-        mode_label = (
-            f"combined  (threshold = {self.config.fraction_threshold})"
-            if self.config.inclusion_mode == "combined"
-            else self.config.inclusion_mode
-        )
+        # One distinct green per mask (cycles if >5)
+        MASK_COLOURS = ["#228833", "#AA3377", "#CCBB44", "#66CCEE", "#EE6677"]
 
         def _set_extent(ax):
             ax.set_xlim(lon_min, lon_max)
@@ -572,116 +696,157 @@ class MaskBuilder:
             ax.grid(True, alpha=0.25, linewidth=0.4)
             _set_extent(ax)
 
+        def _mode_label(cfg: MaskConfig) -> str:
+            if cfg.inclusion_mode == "combined":
+                return f"combined  (threshold = {cfg.fraction_threshold})"
+            return cfg.inclusion_mode
+
         # ================================================================
-        # FIGURE 1 – 6-panel overview  (3 cols × 2 rows)
+        # OVERVIEW FIGURE
+        # (1 header row + 1 row per mask) × 3 cols
         # ================================================================
-        fig1 = plt.figure(figsize=(18, 11))
-        gs   = GridSpec(2, 3, figure=fig1, hspace=0.38, wspace=0.28)
+        n_masks  = len(single_results)
+        n_rows   = 1 + n_masks   # row 0 = shared context; rows 1..n = per-mask
+        fig_h    = 5 + n_masks * 4.5
 
-        # ------ Panel [0,0]: label ----------------------------------------
-        ax_label = fig1.add_subplot(gs[0, 0])
-        ax_label.axis("off")
-        label_lines = [
-            ("Dataset",           self.config.dataset_prefix),
-            ("Country",           country_name),
-            ("Inclusion mode",    mode_label),
-            ("Total grid cells",  f"{len(df_grid):,}"),
-            ("Masked cells",      f"{len(df_masked):,}"),
-            ("Coverage",          f"{100*len(df_masked)/max(len(df_grid),1):.1f} %"),
-            ("Lat range",         f"{all_lats.min():.2f}° – {all_lats.max():.2f}°"),
-            ("Lon range",         f"{all_lons.min():.2f}° – {all_lons.max():.2f}°"),
-        ]
-        y = 0.93
-        for key, val in label_lines:
-            ax_label.text(0.04, y, f"{key}:", fontsize=9, fontweight="bold",
-                          transform=ax_label.transAxes, va="top")
-            ax_label.text(0.46, y, val, fontsize=9,
-                          transform=ax_label.transAxes, va="top")
-            y -= 0.11
-        ax_label.set_title("Mask Summary", fontsize=10, fontweight="bold", pad=6)
-        rect = mpatches.FancyBboxPatch(
-            (0.01, 0.01), 0.98, 0.98,
-            boxstyle="round,pad=0.02",
-            linewidth=1.2, edgecolor="#888888", facecolor="#F7F7F7",
-            transform=ax_label.transAxes, zorder=0
-        )
-        ax_label.add_patch(rect)
+        fig1 = plt.figure(figsize=(18, fig_h))
+        gs   = GridSpec(n_rows, 3, figure=fig1, hspace=0.40, wspace=0.28)
 
-        # ------ Panel [0,1]: country boundary only -------------------------
-        ax1 = fig1.add_subplot(gs[0, 1])
-        gdf_boundary.boundary.plot(ax=ax1, color=C_BOUNDARY, linewidth=BND_LW)
-        _style(ax1, "Country Boundary")
+        # ------ Row 0: shared grid context --------------------------------
+        # [0,0] Country boundary
+        ax_bnd = fig1.add_subplot(gs[0, 0])
+        gdf_boundary.boundary.plot(ax=ax_bnd, color=C_BOUNDARY, linewidth=BND_LW)
+        _style(ax_bnd, "Country Boundary")
 
-        # ------ Panel [0,2]: all grid points --------------------------------
-        ax2 = fig1.add_subplot(gs[0, 2])
-        ax2.scatter(all_lons, all_lats, s=PT_SIZE_ALL, c=C_ALL_PTS,
-                    alpha=PT_ALPHA, linewidths=0, rasterized=True)
-        _style(ax2, f"All Grid Points  ({len(df_grid):,})")
+        # [0,1] All grid points
+        ax_all = fig1.add_subplot(gs[0, 1])
+        ax_all.scatter(all_lons, all_lats, s=PT_SIZE_ALL, c=C_ALL_PTS,
+                       alpha=PT_ALPHA, linewidths=0, rasterized=True)
+        _style(ax_all, f"All Grid Points  ({len(df_grid):,})")
 
-        # ------ Panel [1,0]: all grid points + boundary --------------------
-        ax3 = fig1.add_subplot(gs[1, 0])
-        ax3.scatter(all_lons, all_lats, s=PT_SIZE_ALL, c=C_ALL_PTS,
-                    alpha=PT_ALPHA, linewidths=0, rasterized=True,
-                    label=f"All points ({len(df_grid):,})")
-        gdf_boundary.boundary.plot(ax=ax3, color=C_BOUNDARY, linewidth=BND_LW,
+        # [0,2] All grid points + boundary
+        ax_all_bnd = fig1.add_subplot(gs[0, 2])
+        ax_all_bnd.scatter(all_lons, all_lats, s=PT_SIZE_ALL, c=C_ALL_PTS,
+                           alpha=PT_ALPHA, linewidths=0, rasterized=True,
+                           label=f"All points ({len(df_grid):,})")
+        gdf_boundary.boundary.plot(ax=ax_all_bnd, color=C_BOUNDARY, linewidth=BND_LW,
                                    label="Boundary")
-        ax3.legend(fontsize=6, loc="lower right", framealpha=0.7)
-        _style(ax3, "All Grid Points + Boundary")
+        ax_all_bnd.legend(fontsize=6, loc="lower right", framealpha=0.7)
+        _style(ax_all_bnd, "All Grid Points + Boundary")
 
-        # ------ Panel [1,1]: masked grid points + boundary -----------------
-        ax4 = fig1.add_subplot(gs[1, 1])
-        ax4.scatter(mask_lons, mask_lats, s=PT_SIZE_MASK, c=C_MASK_PTS,
-                    alpha=PT_ALPHA, linewidths=0, rasterized=True,
-                    label=f"Masked ({len(df_masked):,})")
-        gdf_boundary.boundary.plot(ax=ax4, color=C_BOUNDARY, linewidth=BND_LW,
-                                   label="Boundary")
-        ax4.legend(fontsize=6, loc="lower right", framealpha=0.7)
-        _style(ax4, "Masked Grid Points + Boundary")
+        # ------ Rows 1..N: per-mask ----------------------------------------
+        for r, sr in enumerate(single_results, start=1):
+            cfg        = sr.mask_config
+            mask_lons  = sr.df_masked["longitude"].to_numpy()
+            mask_lats  = sr.df_masked["latitude"].to_numpy()
+            c_mask     = MASK_COLOURS[(r - 1) % len(MASK_COLOURS)]
+            ml         = _mode_label(cfg)
+            coverage   = 100 * sr.row_count / max(len(df_grid), 1)
 
-        # ------ Panel [1,2]: masked grid points only -----------------------
-        ax5 = fig1.add_subplot(gs[1, 2])
-        ax5.scatter(mask_lons, mask_lats, s=PT_SIZE_MASK, c=C_MASK_PTS,
-                    alpha=PT_ALPHA, linewidths=0, rasterized=True)
-        _style(ax5, f"Masked Grid Points  ({len(df_masked):,})")
+            # [r,0] Text summary
+            ax_txt = fig1.add_subplot(gs[r, 0])
+            ax_txt.axis("off")
+            label_lines = [
+                ("Dataset",        cfg.dataset_prefix),
+                ("Country",        country_name),
+                ("Mode",           ml),
+                ("Total cells",    f"{len(df_grid):,}"),
+                ("Masked cells",   f"{sr.row_count:,}"),
+                ("Coverage",       f"{coverage:.1f} %"),
+                ("Exclusions",     str(len(cfg.exclusion_bboxes))),
+            ]
+            y = 0.95
+            for key, val in label_lines:
+                ax_txt.text(0.04, y, f"{key}:", fontsize=9, fontweight="bold",
+                            transform=ax_txt.transAxes, va="top")
+                ax_txt.text(0.46, y, val, fontsize=9,
+                            transform=ax_txt.transAxes, va="top")
+                y -= 0.13
+            ax_txt.set_title(f"Mask {r} Summary", fontsize=10, fontweight="bold", pad=6)
+            rect = mpatches.FancyBboxPatch(
+                (0.01, 0.01), 0.98, 0.98,
+                boxstyle="round,pad=0.02",
+                linewidth=1.2, edgecolor="#888888", facecolor="#F7F7F7",
+                transform=ax_txt.transAxes, zorder=0
+            )
+            ax_txt.add_patch(rect)
+
+            # [r,1] Masked points only
+            ax_msk = fig1.add_subplot(gs[r, 1])
+            ax_msk.scatter(mask_lons, mask_lats, s=3, c=c_mask,
+                           alpha=PT_ALPHA, linewidths=0, rasterized=True)
+            _style(ax_msk, f"Masked  ({sr.row_count:,})  |  {ml}")
+
+            # [r,2] Masked points + boundary
+            ax_msk_bnd = fig1.add_subplot(gs[r, 2])
+            ax_msk_bnd.scatter(mask_lons, mask_lats, s=3, c=c_mask,
+                               alpha=PT_ALPHA, linewidths=0, rasterized=True,
+                               label=f"Masked ({sr.row_count:,})")
+            gdf_boundary.boundary.plot(ax=ax_msk_bnd, color=C_BOUNDARY,
+                                       linewidth=BND_LW, label="Boundary")
+            ax_msk_bnd.legend(fontsize=6, loc="lower right", framealpha=0.7)
+            _style(ax_msk_bnd, f"Masked + Boundary  |  {ml}")
 
         fig1.suptitle(
-            f"Geographic Mask — {country_name}  |  {self.config.dataset_prefix}",
-            fontsize=13, fontweight="bold", y=1.01
+            f"Geographic Masks — {country_name}  |  {self.config.dataset_prefix}",
+            fontsize=13, fontweight="bold", y=1.005
         )
 
-        viz_overview.parent.mkdir(parents=True, exist_ok=True)
-        fig1.savefig(viz_overview, dpi=180, bbox_inches="tight")
+        overview_path = self._build_overview_path(country_name)
+        overview_path.parent.mkdir(parents=True, exist_ok=True)
+        fig1.savefig(overview_path, dpi=180, bbox_inches="tight")
         plt.close(fig1)
-        self.logger.info(f"  Overview visualisation → {viz_overview.name}")
+        self.logger.info(f"  Overview visualisation → {overview_path.name}")
 
         # ================================================================
-        # FIGURE 2 – 2-panel detail
+        # DETAIL FIGURES — one per mask
         # ================================================================
-        fig2, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(14, 7))
+        detail_paths: List[Path] = []
 
-        # Left: masked + boundary
-        ax_a.scatter(mask_lons, mask_lats, s=PT_SIZE_MASK + 1, c=C_MASK_PTS,
-                     alpha=PT_ALPHA, linewidths=0, rasterized=True,
-                     label=f"Masked cells ({len(df_masked):,})")
-        gdf_boundary.boundary.plot(ax=ax_a, color=C_BOUNDARY, linewidth=BND_LW,
-                                   label="Boundary")
-        ax_a.legend(fontsize=8, loc="lower right", framealpha=0.8)
-        _style(ax_a, "Masked Grid Points + Country Boundary")
+        for r, sr in enumerate(single_results):
+            cfg       = sr.mask_config
+            if not cfg.generate_visualization:
+                continue
 
-        # Right: masked only
-        ax_b.scatter(mask_lons, mask_lats, s=PT_SIZE_MASK + 1, c=C_MASK_PTS,
-                     alpha=PT_ALPHA, linewidths=0, rasterized=True)
-        _style(ax_b, f"Masked Grid Points  ({len(df_masked):,})")
+            mask_lons = sr.df_masked["longitude"].to_numpy()
+            mask_lats = sr.df_masked["latitude"].to_numpy()
+            c_mask    = MASK_COLOURS[r % len(MASK_COLOURS)]
+            ml        = _mode_label(cfg)
 
-        fig2.suptitle(
-            f"Masked Cells Detail — {country_name}  |  {self.config.dataset_prefix}  |  {mode_label}",
-            fontsize=11, fontweight="bold"
-        )
-        fig2.tight_layout()
+            _, _, viz_detail_path = self._build_output_paths(
+                config=cfg,
+                country_name=country_name,
+                config_hash=self._generate_mask_id(cfg),
+            )
+            if viz_detail_path is None:
+                continue
 
-        viz_detail.parent.mkdir(parents=True, exist_ok=True)
-        fig2.savefig(viz_detail, dpi=180, bbox_inches="tight")
-        plt.close(fig2)
-        self.logger.info(f"  Detail visualisation    → {viz_detail.name}")
+            fig2, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(14, 7))
 
-        return viz_overview, viz_detail
+            # Left: masked + boundary
+            ax_a.scatter(mask_lons, mask_lats, s=4, c=c_mask,
+                         alpha=PT_ALPHA, linewidths=0, rasterized=True,
+                         label=f"Masked cells ({sr.row_count:,})")
+            gdf_boundary.boundary.plot(ax=ax_a, color=C_BOUNDARY,
+                                       linewidth=BND_LW, label="Boundary")
+            ax_a.legend(fontsize=8, loc="lower right", framealpha=0.8)
+            _style(ax_a, "Masked Grid Points + Country Boundary")
+
+            # Right: masked only
+            ax_b.scatter(mask_lons, mask_lats, s=4, c=c_mask,
+                         alpha=PT_ALPHA, linewidths=0, rasterized=True)
+            _style(ax_b, f"Masked Grid Points  ({sr.row_count:,})")
+
+            fig2.suptitle(
+                f"Mask Detail — {country_name}  |  {cfg.dataset_prefix}  |  {ml}",
+                fontsize=11, fontweight="bold"
+            )
+            fig2.tight_layout()
+
+            viz_detail_path.parent.mkdir(parents=True, exist_ok=True)
+            fig2.savefig(viz_detail_path, dpi=180, bbox_inches="tight")
+            plt.close(fig2)
+            self.logger.info(f"  Detail visualisation    → {viz_detail_path.name}")
+            detail_paths.append(viz_detail_path)
+
+        return overview_path, detail_paths

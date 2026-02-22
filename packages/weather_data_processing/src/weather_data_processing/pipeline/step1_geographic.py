@@ -26,7 +26,7 @@ from typing import Optional, Dict, Any
 
 import geopandas as gpd
 
-from osme_common.paths import repo_root, data_dir, resolve_under
+from osme_common.paths import resolve_under
 
 from ..config_schema import GeographicConfig
 from ..processing.mask_builder import MaskBuilder, MaskResult
@@ -59,22 +59,27 @@ class GeographicPipeline:
     def __init__(
         self,
         config: GeographicConfig,
-        data_base: Path,
+        data_dir: Path,
         logger: Optional[VerboseLogger] = None,
     ):
         self.config = config
         self.logger = logger or VerboseLogger("geographic_pipeline", verbose=False)
 
-        # Stable anchors
-        self.repo_root = repo_root()
-        self.data_base = data_base
+        # Stable anchors — data_base is the resolved data/ directory
+        self.data_base = data_dir  # passed in as a resolved Path from run_pipeline
 
-        # Paths for intermediate outputs
+        # Paths for intermediate outputs (extracted boundaries)
         self.boundary_dir = self.data_base / "geoBoundaries" / "extracted"
         self.boundary_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_path(self, path_str: str) -> Path:
-        """Resolve path relative to data_dir."""
+        """Resolve path relative to data_dir (not repo root).
+
+        All shapefile and mask paths in the config are relative to the data
+        directory (e.g. ``"geoBoundaries/..."`` → ``<data_dir>/geoBoundaries/...``).
+        Using repo_root here was the original bug — geoBoundaries lives inside
+        data/, not directly under the repo root.
+        """
         return resolve_under(self.data_base, path_str)
 
     def _extract_country_boundary(self) -> Path:
@@ -148,40 +153,38 @@ class GeographicPipeline:
 
         return output_path
 
-    def _generate_mask(
+    def _generate_masks(
         self,
         boundary_file: Path,
         grib_dir: Path
     ) -> MaskResult:
         """
-        Generate spatial mask using the MaskBuilder.
+        Generate all spatial masks in a single MaskBuilder call.
 
         Parameters
         ----------
         boundary_file : Path
-            Path to country boundary GeoJSON.
+            Path to extracted country boundary GeoJSON.
         grib_dir : Path
             Directory containing GRIB files (for grid extraction).
 
         Returns
         -------
         MaskResult
-            Mask generation result with paths and metadata.
+            Result containing one SingleMaskResult per configured mask.
         """
         self.logger.info("")
 
         builder = MaskBuilder(
-            config=self.config.mask,
+            configs=self.config.masks,
             boundary_file=boundary_file,
             grib_dir=grib_dir,
             logger=self.logger
         )
 
-        result = builder.generate_mask(
+        return builder.generate_mask(
             country_name=self.config.boundary.country_name
         )
-
-        return result
 
     def _validate_adm_shapefiles(self) -> Dict[str, Optional[Path]]:
         """
@@ -259,12 +262,17 @@ class GeographicPipeline:
         boundary_file = self._extract_country_boundary()
 
         # ------------------------------------------------------------------
-        # Stage 2: Generate mask
+        # Stage 2: Generate all masks in one MaskBuilder call
         # ------------------------------------------------------------------
-        mask_result = self._generate_mask(
+        n = len(self.config.masks)
+        modes = ", ".join(f"mode={mc.inclusion_mode}" for mc in self.config.masks)
+        self.logger.info(f"  Generating {n} mask(s): {modes}", force=True)
+
+        mask_result = self._generate_masks(
             boundary_file=boundary_file,
             grib_dir=grib_dir
         )
+        mask_results = mask_result.masks   # list[SingleMaskResult]
 
         # ------------------------------------------------------------------
         # Stage 3: Validate ADM shapefiles for enrichment
@@ -287,10 +295,12 @@ class GeographicPipeline:
         self.logger.info("=" * 72, force=True)
         self.logger.info(f"  Total time: {dt_total:.2f}s")
         self.logger.info(f"  Boundary: {boundary_file.name}")
-        self.logger.info(f"  Mask: {mask_result.mask_file.name}")
-        self.logger.info(f"  Grid cells: {mask_result.row_count:,}")
-        if mask_result.visualization_file:
-            self.logger.info(f"  Visualization: {mask_result.visualization_file.name}")
+        for j, sr in enumerate(mask_results, 1):
+            self.logger.info(f"  Mask {j}: {sr.mask_file.name} ({sr.row_count:,} cells)")
+        if getattr(mask_result, "visualization_overview", None):
+            self.logger.info(f"  Overview: {mask_result.visualization_overview.name}")
+        for vd in getattr(mask_result, "visualization_details", []):
+            self.logger.info(f"  Detail:   {vd.name}")
         if adm_shapefiles["adm1"]:
             self.logger.info(f"  ADM1: {adm_shapefiles['adm1'].name}")
         if adm_shapefiles["adm2"]:
@@ -300,6 +310,7 @@ class GeographicPipeline:
 
         return {
             "boundary_file": boundary_file,
-            "mask_result": mask_result,
+            "mask_result": mask_result,    # MaskResult (contains .masks list)
+            "mask_results": mask_results,  # list[SingleMaskResult] — convenience
             "adm_shapefiles": adm_shapefiles,
         }

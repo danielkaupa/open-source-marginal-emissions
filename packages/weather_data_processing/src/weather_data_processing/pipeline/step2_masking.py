@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-from packages.osme_common.src.osme_common.paths import repo_root, resolve_under
+from osme_common.paths import repo_root, data_dir, resolve_under
 
 try:
     from mpi4py import MPI
@@ -43,6 +43,25 @@ from ..processing.grib_masking import GRIBMaskingProcessor, MaskingResult
 from ..processing.admin_enrichment import ADMEnricher
 from ..utils.logging import VerboseLogger
 from ..utils.parallel import detect_environment, get_mpi_rank, is_rank_zero
+
+
+def _process_file_worker_standalone(
+    grib_file: Path,
+    output_file: Path,
+    mask_file: Path,
+    mask_metadata: dict,
+    adm_enricher,
+) -> "MaskingResult":
+    """
+    Top-level function for ProcessPoolExecutor — must be picklable.
+    Creates its own GRIBMaskingProcessor per worker process.
+    """
+    processor = GRIBMaskingProcessor(
+        mask_file=mask_file,
+        mask_metadata=mask_metadata,
+        adm_enricher=adm_enricher,
+    )
+    return processor.process_file(grib_file=grib_file, output_file=output_file)
 
 
 class MaskingPipeline:
@@ -114,16 +133,34 @@ class MaskingPipeline:
         adm2_shp = None
 
         if adm_config.enable_adm1 and boundary_config.shapefile_adm1:
-            adm1_shp = resolve_under(repo_root(), boundary_config.shapefile_adm1)
+            adm1_shp = resolve_under(data_dir(), boundary_config.shapefile_adm1)
             if not adm1_shp.exists():
                 self.logger.warning(f"ADM1 shapefile not found: {adm1_shp}")
                 adm1_shp = None
 
         if adm_config.enable_adm2 and boundary_config.shapefile_adm2:
-            adm2_shp = resolve_under(repo_root(), boundary_config.shapefile_adm2)
+            adm2_shp = resolve_under(data_dir(), boundary_config.shapefile_adm2)
             if not adm2_shp.exists():
                 self.logger.warning(f"ADM2 shapefile not found: {adm2_shp}")
                 adm2_shp = None
+
+        # Derive ISO3 country group from boundary config for shapefile filtering.
+        # geoBoundaries CGAZ uses ISO3 codes (e.g. "IND") in the shapeGroup field.
+        # We look it up from ADM0 shapefile if available, otherwise fall back to
+        # using the mask metadata's country_token.
+        country_group = None
+        if boundary_config.shapefile_adm0:
+            adm0_shp = resolve_under(data_dir(), boundary_config.shapefile_adm0)
+            if adm0_shp.exists():
+                try:
+                    import geopandas as gpd
+                    gdf0 = gpd.read_file(adm0_shp)
+                    match = gdf0[gdf0[boundary_config.country_field] == boundary_config.country_name]
+                    if not match.empty and "shapeGroup" in gdf0.columns:
+                        country_group = match.iloc[0]["shapeGroup"]
+                        self.logger.info(f"  Country ISO3 group: {country_group}")
+                except Exception as e:
+                    self.logger.warning(f"  Could not derive country_group: {e}")
 
         # Create enricher
         try:
@@ -131,6 +168,8 @@ class MaskingPipeline:
                 config=adm_config,
                 adm1_shapefile=adm1_shp,
                 adm2_shapefile=adm2_shp,
+                country_group=country_group,
+                adm0_name=boundary_config.country_name,
                 logger=self.logger
             )
 
@@ -143,7 +182,7 @@ class MaskingPipeline:
 
     def _discover_grib_files(self) -> List[Path]:
         """Discover GRIB files to process."""
-        grib_dir = resolve_under(repo_root(), self.data_paths.grib_dir)
+        grib_dir = resolve_under(data_dir(), self.data_paths.grib_dir)
 
         if not grib_dir.exists():
             raise FileNotFoundError(f"GRIB directory not found: {grib_dir}")
@@ -165,34 +204,50 @@ class MaskingPipeline:
         processor: GRIBMaskingProcessor
     ) -> MaskingResult:
         """Process a single file (worker function)."""
-        # Build output filename
-        # Pattern: {dataset_prefix}_{COUNTRY}_{hash}_{year}-{month}.parquet
-        prefix = self.mask_metadata.get("dataset_prefix", "era5-world")
-        country = self.mask_metadata.get("country_token", "COUNTRY")
-
-        # Extract year-month from GRIB filename
-        # Expected: era5-world_N37W68S6E98_d514a3a3c256_2018-01.grib
-        stem = grib_file.stem
-        parts = stem.split("_")
-
-        # Try to find year-month pattern
-        year_month = None
-        for part in parts:
-            if "-" in part and len(part) >= 7:
-                year_month = part
-                break
-
-        if year_month:
-            output_name = f"{prefix}_{country}_{year_month}.parquet"
-        else:
-            output_name = f"{prefix}_{country}_{stem}.parquet"
-
-        output_file = output_dir / output_name
-
+        output_file = output_dir / self._build_output_name(grib_file)
         return processor.process_file(
             grib_file=grib_file,
             output_file=output_file
         )
+
+    def _build_output_name(self, grib_file: Path) -> str:
+        """
+        Build the output parquet filename for a GRIB file.
+
+        Pattern: ``{dataset_prefix}_{COUNTRY}_{mask_uid}_{YYYY}_{MM}.parquet``
+
+        The ``mask_uid`` is the config-based hash stored in the mask metadata
+        (written by Step 1 / mask_builder.py).  It identifies *which mask
+        settings* produced this file — not which GRIB file it came from.
+        Using the mask uid means:
+          - files masked with ``centroid`` vs ``combined0.8`` settings never
+            collide in the same output directory
+          - downstream steps can resolve provenance without re-reading the GRIB
+
+        The date segment is parsed from the GRIB filename stem, which follows
+        the convention ``{dataset}_{coords}_{grib_hash}_{YYYY}-{MM}.grib``.
+        """
+        import re as _re
+
+        prefix     = self.mask_metadata.get("dataset_prefix", "era5-world")
+        country    = self.mask_metadata.get("country_token", "COUNTRY")
+        mask_uid   = self.mask_metadata.get("mask_uid", "unknown")
+
+        stem  = grib_file.stem
+        parts = stem.split("_")
+
+        year_month = None
+        for part in reversed(parts):
+            if _re.match(r"^\d{4}-\d{2}$", part):
+                year_month = part
+                break
+
+        if year_month:
+            year, month = year_month.split("-")
+            return f"{prefix}_{country}_{mask_uid}_{year}_{month}.parquet"
+        else:
+            # Fallback: append full stem so we never silently overwrite
+            return f"{prefix}_{country}_{mask_uid}_{stem}.parquet"
 
     def run_sequential(
         self,
@@ -218,6 +273,70 @@ class MaskingPipeline:
                 results.append(result)
             except Exception as e:
                 self.logger.error(f"Failed to process {grib_file.name}: {e}")
+
+        return results
+
+    def run_parallel(
+        self,
+        grib_files: List[Path],
+        output_dir: Path,
+        max_workers: int = None,
+    ) -> List[MaskingResult]:
+        """Run processing using ProcessPoolExecutor (local multiprocessing)."""
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+        import os
+
+        if max_workers is None:
+            max_workers = max(1, (os.cpu_count() or 4) * 2 // 3)
+
+        self.logger.info(
+            f"Running in PARALLEL mode ({max_workers} workers)", force=True
+        )
+
+        # Build a list of (grib_file, output_file) pairs upfront
+        work_items = [
+            (grib_file, output_dir / self._build_output_name(grib_file))
+            for grib_file in grib_files
+        ]
+
+        results = []
+        failed  = []
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all jobs
+            future_to_file = {
+                executor.submit(
+                    _process_file_worker_standalone,
+                    grib_file,
+                    output_file,
+                    self.mask_file,
+                    self.mask_metadata,
+                    self.adm_enricher,
+                ): grib_file
+                for grib_file, output_file in work_items
+            }
+
+            total = len(future_to_file)
+            done  = 0
+            for future in as_completed(future_to_file):
+                grib_file = future_to_file[future]
+                done += 1
+                try:
+                    result = future.result()
+                    results.append(result)
+                    self.logger.info(
+                        f"[{done}/{total}] OK  {grib_file.name}", force=True
+                    )
+                except Exception as e:
+                    failed.append(grib_file.name)
+                    self.logger.error(
+                        f"[{done}/{total}] FAIL  {grib_file.name}: {e}", force=True
+                    )
+
+        if failed:
+            self.logger.warning(
+                f"  {len(failed)} file(s) failed: {failed}", force=True
+            )
 
         return results
 
@@ -276,7 +395,8 @@ class MaskingPipeline:
 
     def run(
         self,
-        use_mpi: bool = False
+        use_mpi: bool = False,
+        max_workers: int = None,
     ) -> Dict[str, Any]:
         """
         Execute the complete masking pipeline.
@@ -313,7 +433,7 @@ class MaskingPipeline:
         # ------------------------------------------------------------------
         # Stage 2: Set up output directory
         # ------------------------------------------------------------------
-        output_dir = resolve_under(repo_root(), self.data_paths.interim_dir)
+        output_dir = resolve_under(data_dir(), self.data_paths.interim_dir) / "masked"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if is_rank_zero():
@@ -327,6 +447,10 @@ class MaskingPipeline:
 
         if use_mpi and HAS_MPI and env.backend in ("pbs", "slurm", "mpi"):
             results = self.run_mpi(grib_files, output_dir)
+        elif env.backend == "local" and len(grib_files) > 1:
+            # Use multiprocessing on local machines when there are multiple files
+            workers = max_workers or env.recommended_workers()
+            results = self.run_parallel(grib_files, output_dir, max_workers=workers)
         else:
             if use_mpi:
                 self.logger.warning("MPI requested but not available, using sequential")

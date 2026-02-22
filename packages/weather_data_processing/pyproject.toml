@@ -1,3 +1,5 @@
+# packages/weather_data_processing/pyproject.toml
+
 [build-system]
 requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -5,19 +7,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "weather-data-processing"
 version = "1.0.0"
-description = "Production pipeline for processing Indian national grid electricity data"
+description = "ERA5 weather data processing pipeline: GRIB → masked → half-hourly → aggregated time-series"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Daniel Kaupa", email = "daniel.kaupa@outlook.com"}
 ]
-keywords = ["electricity", "grid", "emissions", "data-processing", "india"]
+keywords = ["era5", "weather", "reanalysis", "grib", "interpolation", "spatial-masking", "emissions"]
 classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 dependencies = [
@@ -26,7 +29,7 @@ dependencies = [
     "numpy>=1.24.0",
     "matplotlib>=3.7.0",
     "python-dateutil>=2.8.0",
-    "osme-common",  # Internal dependency
+    "osme-common",
     "pydantic>=2.0.0",
     "tqdm>=4.66",
     "geopandas>=0.14",
@@ -44,18 +47,17 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
 ]
+mpi = [
+    "mpi4py>=3.1.0",
+]
 
 [project.scripts]
-# Primary entry point
-process-weather-data = "weather_data_processing:run_pipeline"
-
-# Command aliases - all point to the same function
+process-weather-data = "weather_data_processing.run_pipeline:main"
 weather-data-processing = "weather_data_processing.run_pipeline:main"
 weatherdataprocessing = "weather_data_processing.run_pipeline:main"
 weatherprocessing = "weather_data_processing.run_pipeline:main"
 weaproc = "weather_data_processing.run_pipeline:main"
 wdp = "weather_data_processing.run_pipeline:main"
-process-weather-data = "weather_data_processing.run_pipeline:main"
 
 [tool.setuptools]
 include-package-data = true
@@ -66,11 +68,11 @@ include = ["weather_data_processing*"]
 
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311']
+target-version = ['py311']
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

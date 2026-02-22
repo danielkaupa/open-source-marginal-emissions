@@ -1,0 +1,75 @@
+,
+      {
+        "inclusion_mode": "combined",
+        "fraction_threshold": 0.8,
+        "dataset_prefix": "era5-world",
+        "mask_dir": "geoBoundaries/masks",
+        "metadata_dir": "geoBoundaries/masks/mask_metadata",
+        "generate_visualization": true,
+        "image_dir": "geoBoundaries/images",
+        "exclusion_bboxes": [
+          {
+            "name": "andaman_nicobar",
+            "lon_min": 90.0,
+            "lon_max": 95.0,
+            "lat_min": -10.0,
+            "lat_max": 15.0
+          },
+          {
+            "name": "lakshadweep",
+            "lon_min": 71.0,
+            "lon_max": 74.0,
+            "lat_min": 8.2,
+            "lat_max": 11.7
+          }
+        ]
+      },
+      {
+        "inclusion_mode": "intersection",
+        "dataset_prefix": "era5-world",
+        "mask_dir": "geoBoundaries/masks",
+        "metadata_dir": "geoBoundaries/masks/mask_metadata",
+        "generate_visualization": true,
+        "image_dir": "geoBoundaries/images",
+        "exclusion_bboxes": [
+          {
+            "name": "andaman_nicobar",
+            "lon_min": 90.0,
+            "lon_max": 95.0,
+            "lat_min": -10.0,
+            "lat_max": 15.0
+          },
+          {
+            "name": "lakshadweep",
+            "lon_min": 71.0,
+            "lon_max": 74.0,
+            "lat_min": 8.2,
+            "lat_max": 11.7
+          }
+        ]
+      },
+      {
+        "inclusion_mode": "combined",
+        "fraction_threshold": 0.9,
+        "dataset_prefix": "era5-world",
+        "mask_dir": "geoBoundaries/masks",
+        "metadata_dir": "geoBoundaries/masks/mask_metadata",
+        "generate_visualization": true,
+        "image_dir": "geoBoundaries/images",
+        "exclusion_bboxes": [
+          {
+            "name": "andaman_nicobar",
+            "lon_min": 90.0,
+            "lon_max": 95.0,
+            "lat_min": -10.0,
+            "lat_max": 15.0
+          },
+          {
+            "name": "lakshadweep",
+            "lon_min": 71.0,
+            "lon_max": 74.0,
+            "lat_min": 8.2,
+            "lat_max": 11.7
+          }
+        ]
+      }

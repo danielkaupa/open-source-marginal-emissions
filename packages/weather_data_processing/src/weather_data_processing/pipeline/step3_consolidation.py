@@ -37,10 +37,8 @@ import polars as pl
 from ..processing.consolidation import (
     ConsolidationProcessor,
     parse_filename,
-    load_metadata_rename_map,
     OptimizationResult,
     ConsolidationResult,
-    RenamingResult,
 )
 
 from osme_common.paths import repo_root, resolve_under
@@ -98,28 +96,38 @@ class ConsolidationPipeline:
         dtype_map: Optional[Dict[str, pl.DataType]] = None,
         overwrite: bool = True,
         cleanup_temp: bool = False,
+        expected_uid: Optional[str] = None,
         logger: Optional[VerboseLogger] = None,
     ):
-        base = repo_root()
+        from osme_common.paths import data_dir
+        base = data_dir()
 
         self.input_dir = resolve_under(base, input_dir)
         self.output_dir = resolve_under(base, output_dir)
-        self.temp_dir = resolve_under(base, temp_dir) if temp_dir else (self.input_dir.parent / "temp")
-        self.metadata_file = resolve_under(base, metadata_file) if metadata_file else None
+        self.temp_dir = resolve_under(base, temp_dir) if temp_dir else (self.input_dir.parent / "consolidation" / "temp")
+        self.metadata_file = None  # Column rename disabled — keeping ERA5 shortnames
         self.modes = modes or ["annual"]
         self.drop_cols = drop_cols or DEFAULT_DROP_COLS
         self.dtype_map = dtype_map or DEFAULT_DTYPE_MAP
         self.overwrite = overwrite
         self.cleanup_temp = cleanup_temp
+        self.expected_uid = expected_uid  # If set, only files with this uid are processed
         self.logger = logger or VerboseLogger("consolidation_pipeline", verbose=False)
 
-        # Subdirectories for temporary files
-        self.clean_dir = self.temp_dir / "temp_clean"
-        self.agg_dir = self.temp_dir / "temp_agg"
+        # Subdirectories for each stage
+        # Stage 3a: trimmed monthly files (out-of-month rows removed)
+        self.trimmed_dir = resolve_under(base, input_dir).parent / "consolidation" / "trimmed"
+        # Stage 3b: consolidated annual/quarterly files
+        self.consolidated_dir = resolve_under(base, input_dir).parent / "consolidation" / "consolidated"
 
     def _discover_files(self) -> Tuple[str, str, Dict[int, List[Path]]]:
         """
         Discover monthly files and group by year.
+
+        If ``self.expected_uid`` is set (derived from the active mask config),
+        only files whose uid token matches are included.  Any other files in
+        the directory are silently ignored — this lets the operator keep old
+        mask runs on disk without them interfering.
 
         Returns
         -------
@@ -134,39 +142,64 @@ class ConsolidationPipeline:
         if not files:
             raise FileNotFoundError(f"No parquet files found in {self.input_dir}")
 
-        # Parse first file to get prefix and UID
-        prefix, uid, _, _ = parse_filename(files[0])
-
-        # Group files by year
-        files_by_year = defaultdict(list)
+        files_by_year: Dict[int, List[Path]] = defaultdict(list)
+        prefix_seen: Optional[str] = None
+        uid_seen: Optional[str] = None
+        skipped_uids: set = set()
 
         for f in files:
             try:
                 p, u, year, month = parse_filename(f)
-
-                # Validate prefix/uid consistency
-                if p != prefix or u != uid:
-                    self.logger.warning(
-                        f"Skipping {f.name}: inconsistent prefix/uid "
-                        f"(expected {prefix}_{uid}, got {p}_{u})"
-                    )
-                    continue
-
-                files_by_year[year].append(f)
             except ValueError as e:
                 self.logger.warning(f"Skipping {f.name}: {e}")
+                continue
+
+            # If caller specified which uid to use, enforce it strictly.
+            if self.expected_uid is not None and u != self.expected_uid:
+                skipped_uids.add(u)
+                continue
+
+            # On first accepted file, lock in prefix/uid.
+            if uid_seen is None:
+                prefix_seen = p
+                uid_seen = u
+            elif p != prefix_seen or u != uid_seen:
+                # Shouldn't happen if expected_uid is set, but guard anyway.
+                self.logger.warning(
+                    f"Skipping {f.name}: uid mismatch (expected {uid_seen}, got {u})"
+                )
+                skipped_uids.add(u)
+                continue
+
+            files_by_year[year].append(f)
+
+        if skipped_uids:
+            self.logger.info(
+                f"  Ignored {len(skipped_uids)} other uid(s) in {self.input_dir.name}/: "
+                + ", ".join(sorted(skipped_uids))
+            )
 
         if not files_by_year:
+            if self.expected_uid:
+                raise FileNotFoundError(
+                    f"No files with uid='{self.expected_uid}' found in {self.input_dir}. "
+                    f"Uids present: {sorted(skipped_uids) or 'none parseable'}. "
+                    f"Check that --step masking has been run with the current config."
+                )
             raise ValueError("No valid files found after parsing")
 
-        total_files = sum(len(flist) for flist in files_by_year.values())
+        # Sort each year's file list by month
+        for year in files_by_year:
+            files_by_year[year].sort()
+
+        total_files = sum(len(v) for v in files_by_year.values())
 
         self.logger.info(f"Discovered {total_files} files across {len(files_by_year)} years")
-        self.logger.info(f"  Prefix: {prefix}")
-        self.logger.info(f"  UID: {uid}")
+        self.logger.info(f"  Prefix: {prefix_seen}")
+        self.logger.info(f"  UID: {uid_seen}")
         self.logger.info(f"  Years: {sorted(files_by_year.keys())}")
 
-        return prefix, uid, dict(files_by_year)
+        return prefix_seen, uid_seen, dict(files_by_year)
 
     def _build_global_dtype_map(
         self,
@@ -184,73 +217,77 @@ class ConsolidationPipeline:
         return global_map
 
     def _load_metadata_rename(self) -> Dict[str, str]:
-        """Load column rename map from metadata."""
-        if self.metadata_file is None or not self.metadata_file.exists():
-            self.logger.warning("No metadata file provided, column renaming disabled")
-            return {}
+        """Column renaming is disabled — ERA5 shortnames are preserved."""
+        return {}
 
-        return load_metadata_rename_map(self.metadata_file)
-
-    def _run_stage1_optimize(
+    def _run_stage1_trim(
         self,
         files_by_year: Dict[int, List[Path]],
         my_years: List[int],
         processor: ConsolidationProcessor
     ) -> Tuple[Dict[int, List[Path]], List[OptimizationResult]]:
         """
-        Stage 1: Optimize monthly files.
+        Stage 3a: Trim out-of-month rows and optimise each monthly file.
+
+        ERA5 GRIB exports include a small number of rows from adjacent months
+        at file boundaries (all-null values). These are stripped here using a
+        strict calendar filter: only rows whose timestamp falls within the
+        file's named year-month are kept.
 
         Returns
         -------
         tuple
-            (cleaned_files_by_year, results)
+            (trimmed_files_by_year, results)
         """
         self.logger.info("", force=True)
         self.logger.info("=" * 72, force=True)
-        self.logger.info("STAGE 1: OPTIMIZING MONTHLY FILES", force=True)
+        self.logger.info("STAGE 3a: TRIM + OPTIMISE MONTHLY FILES", force=True)
         self.logger.info("=" * 72, force=True)
 
-        cleaned_by_year = {}
+        trimmed_by_year = {}
         results = []
 
         for year in my_years:
             monthly_files = files_by_year.get(year, [])
-
-            self.logger.info(f"  Processing year {year}: {len(monthly_files)} files")
-
-            cleaned_files = []
+            self.logger.info(f"  Year {year}: {len(monthly_files)} files", force=True)
+            trimmed_files = []
 
             for monthly_file in sorted(monthly_files):
-                # Build output path
-                cleaned_file = self.clean_dir / monthly_file.name
+                try:
+                    _, _, file_year, file_month = parse_filename(monthly_file)
+                except ValueError as e:
+                    self.logger.warning(f"Skipping {monthly_file.name}: {e}")
+                    continue
+
+                trimmed_file = self.trimmed_dir / monthly_file.name
 
                 try:
                     result = processor.optimize_file(
                         input_file=monthly_file,
-                        output_file=cleaned_file,
-                        overwrite=self.overwrite
+                        output_file=trimmed_file,
+                        overwrite=self.overwrite,
+                        trim_to_month=(file_year, file_month),
                     )
-
                     if result:
                         results.append(result)
-                        cleaned_files.append(cleaned_file)
+                        trimmed_files.append(trimmed_file)
                 except Exception as e:
-                    self.logger.error(f"Failed to optimize {monthly_file.name}: {e}")
+                    self.logger.error(f"Failed to trim {monthly_file.name}: {e}")
 
-            cleaned_by_year[year] = cleaned_files
+            trimmed_by_year[year] = trimmed_files
 
-        return cleaned_by_year, results
+        return trimmed_by_year, results
 
     def _run_stage2_consolidate(
         self,
-        cleaned_by_year: Dict[int, List[Path]],
+        trimmed_by_year: Dict[int, List[Path]],
         my_years: List[int],
         prefix: str,
         uid: str,
         processor: ConsolidationProcessor
     ) -> Tuple[Dict[int, List[Path]], List[ConsolidationResult]]:
         """
-        Stage 2: Consolidate monthly files into annual/biannual/quarterly.
+        Stage 3b: Consolidate trimmed monthly files into annual/quarterly.
 
         Returns
         -------
@@ -259,14 +296,14 @@ class ConsolidationPipeline:
         """
         self.logger.info("", force=True)
         self.logger.info("=" * 72, force=True)
-        self.logger.info("STAGE 2: CONSOLIDATING FILES", force=True)
+        self.logger.info("STAGE 3b: CONSOLIDATING FILES", force=True)
         self.logger.info("=" * 72, force=True)
 
         agg_by_year = {}
         results = []
 
         for year in my_years:
-            cleaned_files = cleaned_by_year.get(year, [])
+            cleaned_files = trimmed_by_year.get(year, [])
 
             if not cleaned_files:
                 self.logger.warning(f"No cleaned files for year {year}, skipping")
@@ -306,7 +343,7 @@ class ConsolidationPipeline:
                         result = processor.consolidate_year(
                             year=year,
                             monthly_files=group_files,
-                            output_dir=self.agg_dir,
+                            output_dir=self.consolidated_dir,
                             prefix=prefix,
                             uid=uid,
                             mode=mode,
@@ -323,47 +360,7 @@ class ConsolidationPipeline:
 
         return agg_by_year, results
 
-    def _run_stage3_rename(
-        self,
-        agg_by_year: Dict[int, List[Path]],
-        my_years: List[int],
-        processor: ConsolidationProcessor
-    ) -> List[RenamingResult]:
-        """
-        Stage 3: Rename columns using metadata.
 
-        Returns
-        -------
-        list
-            Renaming results.
-        """
-        self.logger.info("", force=True)
-        self.logger.info("=" * 72, force=True)
-        self.logger.info("STAGE 3: RENAMING COLUMNS", force=True)
-        self.logger.info("=" * 72, force=True)
-
-        results = []
-
-        for year in my_years:
-            agg_files = agg_by_year.get(year, [])
-
-            for agg_file in agg_files:
-                # Build output filename (same name, different directory)
-                output_file = self.output_dir / agg_file.name
-
-                try:
-                    result = processor.rename_file(
-                        input_file=agg_file,
-                        output_file=output_file,
-                        overwrite=self.overwrite
-                    )
-
-                    if result:
-                        results.append(result)
-                except Exception as e:
-                    self.logger.error(f"Failed to rename {agg_file.name}: {e}")
-
-        return results
 
     def _cleanup_temp_dirs(self):
         """Remove temporary directories."""
@@ -374,7 +371,7 @@ class ConsolidationPipeline:
         self.logger.info("CLEANING UP TEMPORARY DIRECTORIES", force=True)
         self.logger.info("=" * 72, force=True)
 
-        for temp_dir in [self.clean_dir, self.agg_dir]:
+        for temp_dir in [self.trimmed_dir, self.consolidated_dir]:
             if temp_dir.exists():
                 file_count = len(list(temp_dir.glob("*")))
                 shutil.rmtree(temp_dir)
@@ -473,35 +470,35 @@ class ConsolidationPipeline:
         )
 
         # ------------------------------------------------------------------
-        # Stage 1: Optimize
+        # Stage 3a: Trim + Optimise
         # ------------------------------------------------------------------
-        cleaned_by_year_local, results1_local = self._run_stage1_optimize(
+        trimmed_by_year_local, results1_local = self._run_stage1_trim(
             files_by_year, my_years, processor
         )
 
         # Gather results
         if comm:
-            all_cleaned = comm.gather(cleaned_by_year_local, root=0)
+            all_trimmed = comm.gather(trimmed_by_year_local, root=0)
             all_results1 = comm.gather(results1_local, root=0)
             comm.Barrier()
 
             if rank == 0:
-                cleaned_by_year_global = {}
-                for cleaned_map in all_cleaned:
-                    cleaned_by_year_global.update(cleaned_map)
+                trimmed_by_year_global = {}
+                for trimmed_map in all_trimmed:
+                    trimmed_by_year_global.update(trimmed_map)
             else:
-                cleaned_by_year_global = None
+                trimmed_by_year_global = None
 
-            cleaned_by_year_global = comm.bcast(cleaned_by_year_global, root=0)
+            trimmed_by_year_global = comm.bcast(trimmed_by_year_global, root=0)
         else:
-            cleaned_by_year_global = cleaned_by_year_local
+            trimmed_by_year_global = trimmed_by_year_local
             all_results1 = [results1_local]
 
         # ------------------------------------------------------------------
-        # Stage 2: Consolidate
+        # Stage 3b: Consolidate
         # ------------------------------------------------------------------
         agg_by_year_local, results2_local = self._run_stage2_consolidate(
-            cleaned_by_year_global, my_years, prefix, uid, processor
+            trimmed_by_year_global, my_years, prefix, uid, processor
         )
 
         # Gather results
@@ -522,19 +519,8 @@ class ConsolidationPipeline:
             agg_by_year_global = agg_by_year_local
             all_results2 = [results2_local]
 
-        # ------------------------------------------------------------------
-        # Stage 3: Rename
-        # ------------------------------------------------------------------
-        results3_local = self._run_stage3_rename(
-            agg_by_year_global, my_years, processor
-        )
-
-        # Gather results
-        if comm:
-            all_results3 = comm.gather(results3_local, root=0)
-            comm.Barrier()
-        else:
-            all_results3 = [results3_local]
+        # Column rename stage removed — ERA5 shortnames preserved throughout.
+        all_results3 = [[]]
 
         # ------------------------------------------------------------------
         # Cleanup (rank 0 only)
@@ -562,9 +548,9 @@ class ConsolidationPipeline:
             self.logger.info(f"  Total time: {dt_total:.2f}s", force=True)
             self.logger.info(f"  Files optimized: {len(results1_flat)}", force=True)
             self.logger.info(f"  Files consolidated: {len(results2_flat)}", force=True)
-            self.logger.info(f"  Files renamed: {len(results3_flat)}", force=True)
             self.logger.info(f"  Modes: {', '.join(self.modes)}", force=True)
-            self.logger.info(f"  Output: {self.output_dir}", force=True)
+            self.logger.info(f"  Trimmed files → {self.trimmed_dir}", force=True)
+            self.logger.info(f"  Consolidated files → {self.consolidated_dir}", force=True)
             self.logger.info("=" * 72, force=True)
             self.logger.info("", force=True)
 

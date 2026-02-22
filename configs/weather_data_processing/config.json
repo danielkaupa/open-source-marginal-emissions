@@ -1,7 +1,7 @@
 {
   "parallelization": {
-    "mode": "auto",
-    "manual_workers": null,
+    "mode": "manual",
+    "manual_workers": 2,
     "prefer_mpi": true
   },
   "logging": {
@@ -23,40 +23,44 @@
       "country_name": "India",
       "country_field": "shapeName"
     },
-    "mask": {
-      "inclusion_mode": "combined",
-      "fraction_threshold": 0.8,
-      "dataset_prefix": "era5-world",
-      "mask_dir": "geoBoundaries/masks/era5-world",
-      "metadata_dir": "geoBoundaries/masks/mask_metadata",
-      "generate_visualization": true,
-      "image_dir": "geoBoundaries/images",
-      "exclusion_bboxes": [
-        {
-          "name": "andaman_nicobar",
-          "lon_min": 90.0,
-          "lon_max": 95.0,
-          "lat_min": -10.0,
-          "lat_max": 15.0
-        },
-        {
-          "name": "lakshadweep",
-          "lon_min": 71.0,
-          "lon_max": 74.0,
-          "lat_min": 8.2,
-          "lat_max": 11.7
-        }
-      ]
-    },
     "adm_enrichment": {
+      "enable_adm0": true,
       "enable_adm1": true,
       "enable_adm2": true,
+      "adm0_name_field": "shapeName",
+      "adm0_code_field": "shapeGroup",
       "adm1_name_field": "shapeName",
       "adm2_name_field": "shapeName",
-      "adm1_code_field": "shapeISO",
-      "adm2_code_field": "shapeISO",
+      "adm1_code_field": "shapeID",
+      "adm2_code_field": "shapeID",
       "undefined_value": "NONE_DEFINED"
-    }
+    },
+    "masks": [
+      {
+        "inclusion_mode": "centroid",
+        "dataset_prefix": "era5-world",
+        "mask_dir": "geoBoundaries/masks",
+        "metadata_dir": "geoBoundaries/masks/mask_metadata",
+        "generate_visualization": true,
+        "image_dir": "geoBoundaries/images",
+        "exclusion_bboxes": [
+          {
+            "name": "andaman_nicobar",
+            "lon_min": 90.0,
+            "lon_max": 95.0,
+            "lat_min": -10.0,
+            "lat_max": 15.0
+          },
+          {
+            "name": "lakshadweep",
+            "lon_min": 71.0,
+            "lon_max": 74.0,
+            "lat_min": 8.2,
+            "lat_max": 11.7
+          }
+        ]
+      }
+    ]
   },
   "temporal": {
     "interpolation": {
@@ -74,9 +78,11 @@
       "level": "ADM0",
       "weight_by_area": true,
       "output_format": "parquet"
-    },
-    "temporal": {
-      "modes": ["annual", "quarterly"]
+    }
+  },
+    "temporal_partitioning": {
+      "modes": [
+        "annual"
+      ]
     }
   }
-}
