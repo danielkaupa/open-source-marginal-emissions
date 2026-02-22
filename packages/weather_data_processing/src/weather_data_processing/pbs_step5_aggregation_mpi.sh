@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l select=1:ncpus=30:mem=100gb
+#PBS -l select=1:ncpus=8:mpiprocs=8:mem=100gb
 #PBS -l walltime=00:30:00
 #PBS -N weather_step5_aggregation_mpi
 
@@ -11,7 +11,7 @@
 # using MPI. Files are distributed across MPI ranks for parallel processing.
 #
 # Resources:
-#   - 1 node × 30 cores = 30 MPI ranks
+#   - 1 node × 8 cores = 8 MPI ranks
 #   - Each rank processes 1-2 files
 #   - Memory: 100GB
 #
@@ -53,7 +53,7 @@ python -c "from mpi4py import MPI; print(f'MPI OK: {MPI.COMM_WORLD.Get_size()} r
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
-CONFIG_FILE=${CONFIG_FILE:-"configs/pipeline_config.json"}
+CONFIG_FILE=${CONFIG_FILE:-"weather_data_processing/config.json"}
 
 # ------------------------------------------------------------------------------
 # Thread Control
@@ -77,10 +77,9 @@ echo "Total MPI ranks: $NP"
 echo ""
 
 # Run Step 5 with MPI parallelization
-mpiexec -n "$NP" python run_pipeline.py \
+mpiexec -n "$NP" wdp \
     --config "$CONFIG_FILE" \
     --step aggregation \
-    --use-mpi \
     --verbose
 
 EXIT_CODE=$?

@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l select=2:ncpus=30:mpiprocs=30:mem=100gb
+#PBS -l select=1:ncpus=8:mpiprocs=8:mem=100gb
 #PBS -l walltime=02:00:00
 #PBS -N weather_step4_temporal_mpi
 
@@ -11,7 +11,7 @@
 # Files are distributed across MPI ranks for parallel processing.
 #
 # Resources:
-#   - 2 nodes × 30 cores = 60 MPI ranks
+#   - 1 node × 8 cores = 8 MPI ranks
 #   - Each rank processes 1-2 files
 #   - Memory: 100GB per node
 #
@@ -48,12 +48,12 @@ eval "$(~/miniforge3/bin/conda shell.bash hook)"
 conda activate osme
 
 # Verify MPI availability
-python -c "from mpi4py import MPI; print(f'MPI OK: {MPI.COMM_WORLD.Get_size()} ranks')" || exit 1
+mpiexec -n "$NP" python -c "from mpi4py import MPI; print('Hello from', MPI.COMM_WORLD.Get_rank(), 'of', MPI.COMM_WORLD.Get_size())"
 
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
-CONFIG_FILE=${CONFIG_FILE:-"configs/pipeline_config.json"}
+CONFIG_FILE=${CONFIG_FILE:-"weather_data_processing/config.json"}
 
 # ------------------------------------------------------------------------------
 # Thread Control
@@ -62,6 +62,9 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
+export POLARS_MAX_THREADS=1
+export RAYON_NUM_THREADS=1
+
 
 # ------------------------------------------------------------------------------
 # Run Pipeline
@@ -77,10 +80,9 @@ echo "Total MPI ranks: $NP"
 echo ""
 
 # Run Step 4 with MPI parallelization
-mpiexec -n "$NP" python run_pipeline.py \
+mpiexec -n "$NP" wdp \
     --config "$CONFIG_FILE" \
     --step temporal \
-    --use-mpi \
     --verbose
 
 EXIT_CODE=$?

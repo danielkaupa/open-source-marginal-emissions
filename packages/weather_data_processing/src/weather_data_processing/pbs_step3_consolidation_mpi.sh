@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l select=2:ncpus=30:mpiprocs=30:mem=100gb
+#PBS -l select=2:ncpus=16:mpiprocs=16:mem=100gb
 #PBS -l walltime=01:00:00
 #PBS -N weather_step3_consolidation_mpi
 
@@ -11,7 +11,7 @@
 # Years are distributed across MPI ranks for parallel processing.
 #
 # Resources:
-#   - 2 nodes × 30 cores = 60 MPI ranks
+#   - 2 nodes × 16 cores = 32 MPI ranks
 #   - Each rank processes 1-2 years
 #   - Memory: 100GB per node
 #
@@ -53,7 +53,7 @@ python -c "from mpi4py import MPI; print(f'MPI OK: {MPI.COMM_WORLD.Get_size()} r
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
-CONFIG_FILE=${CONFIG_FILE:-"configs/pipeline_config.json"}
+CONFIG_FILE=${CONFIG_FILE:-"weather_data_processing/config.json"}
 
 # ------------------------------------------------------------------------------
 # Thread Control
@@ -77,10 +77,9 @@ echo "Total MPI ranks: $NP"
 echo ""
 
 # Run Step 3 with MPI parallelization
-mpiexec -n "$NP" python run_pipeline.py \
+mpiexec -n "$NP" wdp \
     --config "$CONFIG_FILE" \
     --step consolidation \
-    --use-mpi \
     --verbose
 
 EXIT_CODE=$?

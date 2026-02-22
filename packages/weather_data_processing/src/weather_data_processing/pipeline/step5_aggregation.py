@@ -5,15 +5,18 @@
 # =============================================================================
 
 """
-Step 5: Aggregation Pipeline
-=============================
+Step 5: Spatial Aggregation Pipeline
+=====================================
 
 Create national and regional time-series from half-hourly gridded data.
 
-Pipeline stages:
-1. **Spatial aggregation**: Grid → Regional time-series
-2. **Temporal aggregation** (optional): Half-hourly → Daily/Monthly
-3. **Multi-level outputs**: ADM0 (national), ADM1 (state), ADM2 (district)
+This step performs **spatial aggregation only** — half-hourly temporal resolution
+is always preserved. Output files contain one row per region per half-hourly timestep.
+
+Pipeline outputs:
+- ADM0 (national): Single time-series for the entire country
+- ADM1 (state/province): One time-series per first-level administrative unit
+- ADM2 (district): One time-series per second-level administrative unit
 
 Supports both sequential and MPI parallelization (distributes files across ranks).
 """
@@ -22,8 +25,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import polars as pl
+from typing import Dict, List, Optional
 
 try:
     from mpi4py import MPI
@@ -34,8 +36,7 @@ except ImportError:
 
 from ..processing.aggregation import (
     SpatialAggregator,
-    AggregationResult,
-    aggregate_temporal,
+    SpatialAggregationResult,
     DEFAULT_WIND_PAIRS,
 )
 from ..utils.logging import VerboseLogger
@@ -44,7 +45,11 @@ from ..utils.parallel import get_mpi_rank, is_rank_zero
 
 class AggregationPipeline:
     """
-    Orchestrator for Step 5: Spatial and temporal aggregation.
+    Orchestrator for Step 5: Spatial aggregation.
+
+    This pipeline aggregates gridded half-hourly data to regional time-series.
+    **Temporal resolution is always preserved** — half-hourly input produces
+    half-hourly output.
 
     Parameters
     ----------
@@ -54,11 +59,14 @@ class AggregationPipeline:
         Directory for aggregated time-series outputs.
     aggregation_levels : list of str, optional
         Administrative levels to aggregate ('ADM0', 'ADM1', 'ADM2').
-    temporal_modes : list of str, optional
-        Temporal aggregation modes ('daily', 'weekly', 'monthly', 'annual').
-        If None or empty, keep half-hourly resolution.
     weight_by_area : bool, optional
         Use area-weighted averaging (default True).
+    intensive_vars : list of str, optional
+        ERA5 shortnames for intensive variables (weighted mean only).
+    extensive_vars : list of str, optional
+        ERA5 shortnames for extensive variables (weighted mean + weighted sum).
+    wind_pairs : dict, optional
+        Mapping of height label → (u_col, v_col) for wind derivation.
     logger : VerboseLogger, optional
         Logger instance.
 
@@ -68,7 +76,6 @@ class AggregationPipeline:
     ...     input_dir=Path("data/era5-world/transformed"),
     ...     output_dir=Path("data/era5-world/national"),
     ...     aggregation_levels=["ADM0", "ADM1"],
-    ...     temporal_modes=["daily", "monthly"]
     ... )
     >>> results = pipeline.run(use_mpi=True)
     """
@@ -78,7 +85,6 @@ class AggregationPipeline:
         input_dir: Path,
         output_dir: Path,
         aggregation_levels: Optional[List[str]] = None,
-        temporal_modes: Optional[List[str]] = None,
         weight_by_area: bool = True,
         logger: Optional[VerboseLogger] = None,
         intensive_vars: Optional[List[str]] = None,
@@ -88,7 +94,6 @@ class AggregationPipeline:
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.aggregation_levels = aggregation_levels or ["ADM0"]
-        self.temporal_modes = temporal_modes or []
         self.weight_by_area = weight_by_area
         self.logger = logger or VerboseLogger("aggregation_pipeline", verbose=False)
         self.intensive_vars = intensive_vars
@@ -114,7 +119,7 @@ class AggregationPipeline:
     def _run_spatial_aggregation(
         self,
         files: List[Path]
-    ) -> Dict[str, List[AggregationResult]]:
+    ) -> Dict[str, List[SpatialAggregationResult]]:
         """
         Run spatial aggregation for all levels.
 
@@ -125,7 +130,7 @@ class AggregationPipeline:
         """
         self.logger.info("", force=True)
         self.logger.info("=" * 72, force=True)
-        self.logger.info("STAGE 5a: SPATIAL AGGREGATION", force=True)
+        self.logger.info("STEP 5: SPATIAL AGGREGATION", force=True)
         self.logger.info("=" * 72, force=True)
 
         results_by_level = {}
@@ -153,7 +158,7 @@ class AggregationPipeline:
                     "_halfhourly", f"_{level}_halfhourly"
                 ) + ".parquet"
 
-                output_file = self.output_dir / level / "halfhourly" / output_name
+                output_file = self.output_dir / level / output_name
 
                 try:
                     result = aggregator.aggregate_file(
@@ -171,114 +176,12 @@ class AggregationPipeline:
 
         return results_by_level
 
-    def _run_temporal_aggregation(
-        self,
-        spatial_results: Dict[str, List[AggregationResult]]
-    ) -> Dict[str, Dict[str, List[AggregationResult]]]:
-        """
-        Temporally aggregate spatially aggregated regional time-series.
-
-        This stage operates on files that have already been through Stage 5a:
-        one row per region per timestep, no grid cells, no latitude column.
-        Area weighting is not applicable here — it was applied in Stage 5a.
-
-        Column treatment follows suffix conventions written by SpatialAggregator:
-          {var}_total  → summed over time   (radiation/precip accumulation)
-          everything else → averaged over time (intensities, wind, etc.)
-
-        Returns
-        -------
-        dict
-            Mapping of aggregation_level → temporal_mode → list of results.
-        """
-        if not self.temporal_modes:
-            self.logger.info("  Temporal aggregation: SKIPPED (no modes specified)")
-            return {}
-
-        self.logger.info("", force=True)
-        self.logger.info("=" * 72, force=True)
-        self.logger.info("STAGE 5b: TEMPORAL AGGREGATION", force=True)
-        self.logger.info("=" * 72, force=True)
-
-        results_by_level_mode = {}
-
-        for level, spatial_results_list in spatial_results.items():
-            results_by_level_mode[level] = {}
-
-            # Region grouping columns for this ADM level
-            if level == "ADM1":
-                region_cols = ["adm1_code", "adm1_name"]
-            elif level == "ADM2":
-                region_cols = ["adm2_code", "adm2_name", "adm1_code", "adm1_name"]
-            else:
-                region_cols = []
-
-            for mode in self.temporal_modes:
-                self.logger.info(
-                    f"  Aggregating {level} to {mode} resolution...",
-                    force=True
-                )
-
-                mode_results = []
-
-                for spatial_result in spatial_results_list:
-                    input_file = spatial_result.output_file
-
-                    output_name = input_file.stem.replace(
-                        "_halfhourly", f"_{mode}"
-                    ) + ".parquet"
-                    output_file = self.output_dir / level / mode / output_name
-
-                    t0 = time.perf_counter()
-                    self.logger.info(f"Aggregating {input_file.name}", force=True)
-
-                    try:
-                        df = pl.read_parquet(input_file)
-
-                        actual_region_cols = [c for c in region_cols if c in df.columns]
-
-                        df_agg = aggregate_temporal(
-                            df=df,
-                            mode=mode,
-                            group_cols=actual_region_cols,
-                        )
-
-                        output_file.parent.mkdir(parents=True, exist_ok=True)
-                        df_agg.write_parquet(output_file, compression="zstd", statistics=True)
-
-                        dt = time.perf_counter() - t0
-                        num_timesteps = df_agg.select(pl.col("time").n_unique()).item()
-
-                        self.logger.info(
-                            f"  Complete: {spatial_result.num_regions} region(s), "
-                            f"{num_timesteps:,} timesteps ({dt:.2f}s)",
-                            force=True
-                        )
-
-                        mode_results.append(AggregationResult(
-                            output_file=output_file,
-                            aggregation_level=level,
-                            temporal_resolution=mode,
-                            num_regions=spatial_result.num_regions,
-                            num_timesteps=num_timesteps,
-                            processing_time_s=dt,
-                        ))
-
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed temporal aggregation {input_file.name}: {e}"
-                        )
-
-                results_by_level_mode[level][mode] = mode_results
-
-        return results_by_level_mode
-
     def run(
         self,
         use_mpi: bool = False
     ) -> Dict:
         """
-        Execute the complete aggregation pipeline.
+        Execute the spatial aggregation pipeline.
 
         Parameters
         ----------
@@ -298,7 +201,7 @@ class AggregationPipeline:
         if is_rank_zero():
             self.logger.info("", force=True)
             self.logger.info("#" * 72, force=True)
-            self.logger.info("# STEP 5: AGGREGATION PIPELINE", force=True)
+            self.logger.info("# STEP 5: SPATIAL AGGREGATION PIPELINE", force=True)
             self.logger.info("#" * 72, force=True)
             self.logger.info("", force=True)
 
@@ -332,10 +235,10 @@ class AggregationPipeline:
         if rank == 0:
             self.logger.info(f"Processing {len(files)} files across {size} ranks")
             self.logger.info(f"  Aggregation levels: {', '.join(self.aggregation_levels)}")
-            self.logger.info(f"  Temporal modes: {', '.join(self.temporal_modes) if self.temporal_modes else 'None (keep half-hourly)'}")
+            self.logger.info("  Temporal resolution: half-hourly (preserved)")
 
         # ------------------------------------------------------------------
-        # Stage 5a: Spatial Aggregation
+        # Spatial Aggregation
         # ------------------------------------------------------------------
         spatial_results_local = self._run_spatial_aggregation(my_files)
 
@@ -356,14 +259,6 @@ class AggregationPipeline:
                 spatial_results_global = None
         else:
             spatial_results_global = spatial_results_local
-
-        # ------------------------------------------------------------------
-        # Stage 5b: Temporal Aggregation (rank 0 only for simplicity)
-        # ------------------------------------------------------------------
-        if rank == 0:
-            temporal_results = self._run_temporal_aggregation(spatial_results_global)
-        else:
-            temporal_results = None
 
         if comm:
             comm.Barrier()
@@ -386,20 +281,9 @@ class AggregationPipeline:
                 total_timesteps = sum(r.num_timesteps for r in results)
                 self.logger.info(
                     f"  {level}: {len(results)} files, "
-                    f"{total_regions} region(s), {total_timesteps:,} timesteps",
+                    f"{total_regions} region(s), {total_timesteps:,} half-hourly timesteps",
                     force=True
                 )
-
-            # Temporal aggregation summary
-            if temporal_results:
-                self.logger.info("", force=True)
-                self.logger.info("  Temporal aggregation:", force=True)
-                for level, modes_dict in temporal_results.items():
-                    for mode, results in modes_dict.items():
-                        self.logger.info(
-                            f"    {level} {mode}: {len(results)} files",
-                            force=True
-                        )
 
             self.logger.info(f"  Output: {self.output_dir}", force=True)
             self.logger.info("=" * 72, force=True)
@@ -407,7 +291,6 @@ class AggregationPipeline:
 
             return {
                 "spatial_results": spatial_results_global,
-                "temporal_results": temporal_results,
                 "output_dir": self.output_dir,
                 "total_time_s": dt_total,
             }

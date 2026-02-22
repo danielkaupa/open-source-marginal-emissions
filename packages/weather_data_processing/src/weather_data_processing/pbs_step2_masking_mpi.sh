@@ -1,7 +1,8 @@
 #!/bin/bash
-#PBS -l select=2:ncpus=30:mpiprocs=30:mem=100gb
+#PBS -l select=2:ncpus=16:mpiprocs=16:mem=100gb
 #PBS -l walltime=02:00:00
 #PBS -N weather_step2_masking_mpi
+#PBS -l place=scatter
 
 # =============================================================================
 # Step 2: GRIB Masking with MPI Parallelization
@@ -11,7 +12,7 @@
 # Each MPI rank processes a subset of the files.
 #
 # Resources:
-#   - 2 nodes × 30 cores = 60 MPI ranks
+#   - 2 nodes × 16 cpus = 32 MPI ranks
 #   - Each rank processes ~1-2 files
 #   - Memory: 100GB per node
 #
@@ -48,16 +49,12 @@ eval "$(~/miniforge3/bin/conda shell.bash hook)"
 conda activate osme
 
 # Verify MPI availability
-python -c "from mpi4py import MPI; print(f'MPI OK: {MPI.COMM_WORLD.Get_size()} ranks')" || exit 1
-
+mpiexec -hostfile "$PBS_NODEFILE" -n "$NP" python -c "from mpi4py import MPI; import socket; print(MPI.COMM_WORLD.Get_rank(), socket.gethostname())"
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
-CONFIG_FILE=${CONFIG_FILE:-"configs/pipeline_config.json"}
+CONFIG_FILE=${CONFIG_FILE:-"weather_data_processing/config.json"}
 
-# Optional: Override mask files (auto-detected if not provided)
-# MASK_FILE=${MASK_FILE:-""}
-# MASK_METADATA=${MASK_METADATA:-""}
 
 # ------------------------------------------------------------------------------
 # Thread Control (avoid over-threading)
@@ -82,10 +79,9 @@ echo ""
 
 # The --use-mpi flag tells the pipeline to use MPI parallelization
 # The pipeline automatically detects the PBS environment
-mpiexec -n "$NP" python run_pipeline.py \
+mpiexec -n "$NP" wdp \
     --config "$CONFIG_FILE" \
     --step masking \
-    --use-mpi \
     --verbose
 
 EXIT_CODE=$?

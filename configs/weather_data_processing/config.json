@@ -1,7 +1,6 @@
 {
   "parallelization": {
-    "mode": "manual",
-    "manual_workers": 2,
+    "mode": "auto",
     "prefer_mpi": true
   },
   "logging": {
@@ -62,7 +61,7 @@
       }
     ]
   },
-  "temporal": {
+"temporal": {
     "interpolation": {
       "method": "rate_shaped",
       "datetime_unit": "us",
@@ -73,16 +72,16 @@
       "keep_utc_column": false
     }
   },
+  "consolidation": {
+    "modes": [
+      "annual"
+    ]
+  },
   "aggregation": {
     "spatial": {
       "level": "ADM0",
       "weight_by_area": true,
       "output_format": "parquet"
     }
-  },
-    "temporal_partitioning": {
-      "modes": [
-        "annual"
-      ]
-    }
   }
+}

@@ -1,4 +1,4 @@
-# packagees/weather_data_processing/src/weather_data_processing/config_schema.py
+# packages/weather_data_processing/src/weather_data_processing/config_schema.py
 # =============================================================================
 # Copyright © 2025 Daniel Kaupa
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -268,6 +268,8 @@ class SpatialAggregationConfig(BaseModel):
     """
     Spatial aggregation configuration.
 
+    All output is half-hourly — no temporal aggregation is performed.
+
     Attributes
     ----------
     level : {'ADM0', 'ADM1', 'ADM2'}
@@ -283,23 +285,23 @@ class SpatialAggregationConfig(BaseModel):
     output_format: Literal["parquet", "csv", "both"] = "parquet"
 
 
-class TemporalPartitioningConfig(BaseModel):
+class ConsolidationConfig(BaseModel):
     """
-    Temporal partitioning configuration.
+    File consolidation configuration for Step 3.
 
     Attributes
     ----------
     modes : list of str
-        Partition modes (e.g., ['annual', 'monthly', 'quarterly']).
+        How to partition consolidated files ('annual', 'biannual', 'quarterly').
+        This controls file organization, NOT temporal aggregation.
+        All data remains at original hourly resolution until interpolation.
     """
 
-    modes: List[Literal["annual", "biannual", "quarterly", "monthly"]] = [
-        "annual"
-    ]
+    modes: List[Literal["annual", "biannual", "quarterly"]] = ["annual"]
 
 
 class AggregationConfig(BaseModel):
-    """Complete aggregation configuration."""
+    """Complete aggregation configuration (spatial only)."""
 
     spatial: SpatialAggregationConfig
 
@@ -340,6 +342,9 @@ class PipelineConfig(BaseModel):
 
     This is the top-level schema that combines all sub-configurations.
 
+    All outputs are half-hourly — no temporal aggregation is performed anywhere
+    in the pipeline.
+
     Attributes
     ----------
     parallelization : ParallelizationConfig
@@ -352,10 +357,11 @@ class PipelineConfig(BaseModel):
         Geographic processing settings (None skips this step).
     temporal : TemporalConfig or None
         Temporal processing settings (None skips this step).
-    temporal_partitioning : TemporalPartitioningConfig or None
-        Temporal partitioning settings (None skips this step).
+    consolidation : ConsolidationConfig or None
+        File consolidation settings for Step 3 (controls file partitioning, not
+        temporal resolution).
     aggregation : AggregationConfig or None
-        Aggregation settings (None skips this step).
+        Spatial aggregation settings (None skips this step).
 
     Examples
     --------
@@ -369,7 +375,7 @@ class PipelineConfig(BaseModel):
     data_paths: DataPathsConfig = DataPathsConfig()
     geographic: Optional[GeographicConfig] = None
     temporal: Optional[TemporalConfig] = None
-    temporal_partitioning: Optional[TemporalPartitioningConfig] = None
+    consolidation: Optional[ConsolidationConfig] = None
     aggregation: Optional[AggregationConfig] = None
 
     def save_to_file(self, path: Path) -> None:

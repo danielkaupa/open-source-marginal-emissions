@@ -18,7 +18,7 @@ Key Features
 - Intensive vs extensive field handling
 - Dual avg/total output for extensive (radiation, precipitation) variables
 - Wind speed and direction derived from weighted-average u/v components
-- Preserve temporal resolution (temporal aggregation handled by aggregate_temporal)
+- Preserves half-hourly temporal resolution (NO temporal aggregation)
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from ..utils.logging import VerboseLogger
 
 
 # =============================================================================
-# Variable Classifications
+# Variable Classifications (ERA5 shortnames only)
 # =============================================================================
 
 # Intensive fields: area-weighted average only.
@@ -52,14 +52,10 @@ DEFAULT_INTENSIVE_VARS = [
 ]
 
 # Extensive fields: produce BOTH a weighted average ({var}_avg) AND a
-# weighted area-integrated total ({var}_total) in Stage 5a output.
+# weighted area-integrated total ({var}_total) in output.
 #
 #   {var}_avg   — intensity: how much per unit area (comparable across regions)
 #   {var}_total — magnitude: how much in total over the region
-#
-# Stage 5b temporal aggregation then:
-#   averages the _avg columns over time (mean of half-hourly averages)
-#   sums    the _total columns over time (accumulation over the period)
 DEFAULT_EXTENSIVE_VARS = [
     "tp",
     "ssr",  "ssrc",  "ssrd",  "ssrdc",
@@ -84,11 +80,10 @@ DEFAULT_WIND_PAIRS: Dict[str, Tuple[str, str]] = {
 # =============================================================================
 
 @dataclass
-class AggregationResult:
+class SpatialAggregationResult:
     """Result of spatial aggregation."""
     output_file: Path
     aggregation_level: str
-    temporal_resolution: str
     num_regions: int
     num_timesteps: int
     processing_time_s: float
@@ -113,6 +108,9 @@ class SpatialAggregator:
     weighted-average u/v columns and appended as:
         ``wind_{height}_speed``   — m/s
         ``wind_{height}_dir_deg`` — meteorological degrees (0 = N, 90 = E)
+
+    **Temporal resolution is always preserved** — half-hourly input produces
+    half-hourly output.
 
     Parameters
     ----------
@@ -215,12 +213,11 @@ class SpatialAggregator:
         input_file: Path,
         output_file: Path,
         overwrite: bool = True,
-    ) -> AggregationResult:
+    ) -> SpatialAggregationResult:
         """
         Spatially aggregate a gridded half-hourly file to a regional time-series.
 
-        Temporal resolution is preserved (half-hourly in, half-hourly out).
-        Temporal aggregation is handled separately by ``aggregate_temporal()``.
+        Half-hourly temporal resolution is preserved (half-hourly in, half-hourly out).
 
         Parameters
         ----------
@@ -233,7 +230,7 @@ class SpatialAggregator:
 
         Returns
         -------
-        AggregationResult
+        SpatialAggregationResult
         """
         t0 = time.perf_counter()
 
@@ -303,80 +300,14 @@ class SpatialAggregator:
 
         dt = time.perf_counter() - t0
         self.logger.info(
-            f"  Complete: {num_regions} region(s), {num_timesteps:,} timesteps ({dt:.2f}s)",
+            f"  Complete: {num_regions} region(s), {num_timesteps:,} half-hourly timesteps ({dt:.2f}s)",
             force=True
         )
 
-        return AggregationResult(
+        return SpatialAggregationResult(
             output_file=output_file,
             aggregation_level=self.aggregation_level,
-            temporal_resolution="halfhourly",
             num_regions=num_regions,
             num_timesteps=num_timesteps,
             processing_time_s=dt,
         )
-
-
-# =============================================================================
-# Temporal Aggregation
-# =============================================================================
-
-def aggregate_temporal(
-    df: pl.DataFrame,
-    mode: Literal["daily", "weekly", "monthly", "annual"],
-    group_cols: Optional[List[str]] = None,
-) -> pl.DataFrame:
-    """
-    Temporally aggregate a spatially aggregated regional time-series.
-
-    Column treatment is determined by suffix convention established in
-    Stage 5a:
-
-    - ``{var}_avg``       → mean over time  (radiation/precip intensity)
-    - ``{var}_total``     → sum  over time  (radiation/precip accumulation)
-    - ``wind_*_speed``    → mean over time
-    - ``wind_*_dir_deg``  → mean over time  (directional mean; adequate for
-                            broad temporal windows; use vector mean if needed)
-    - everything else     → mean over time  (temperature, cloud cover, etc.)
-
-    Parameters
-    ----------
-    df : pl.DataFrame
-        Input regional time-series (output of Stage 5a).
-    mode : str
-        Temporal resolution to aggregate to.
-    group_cols : list of str, optional
-        Region identifier columns (e.g. ['adm1_code', 'adm1_name']).
-
-    Returns
-    -------
-    pl.DataFrame
-        Temporally aggregated time-series.
-    """
-    group_cols = group_cols or []
-
-    # Truncate timestamps to the target resolution
-    truncate_map = {
-        "daily":   "1d",
-        "weekly":  "1w",
-        "monthly": "1mo",
-        "annual":  "1y",
-    }
-    df = df.with_columns(
-        pl.col("time").dt.truncate(truncate_map[mode]).alias("time")
-    )
-
-    agg_exprs = []
-    all_group = {"time"} | set(group_cols)
-
-    for col in df.columns:
-        if col in all_group:
-            continue
-        if col.endswith("_total"):
-            agg_exprs.append(pl.col(col).sum().alias(col))
-        else:
-            # _avg, wind_*_speed, wind_*_dir_deg, t2m, tcc, etc.
-            agg_exprs.append(pl.col(col).mean().alias(col))
-
-    df_agg = df.group_by(["time"] + group_cols).agg(agg_exprs)
-    return df_agg.sort(["time"] + group_cols)

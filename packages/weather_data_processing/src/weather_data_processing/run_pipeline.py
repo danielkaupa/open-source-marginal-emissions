@@ -10,19 +10,21 @@ Weather Data Processing Pipeline - Main CLI
 
 Command-line interface for running the complete weather data processing pipeline.
 
+All outputs are half-hourly — no temporal aggregation is performed.
+
 Usage
 -----
     # Run full pipeline
-    python run_pipeline.py --config configs/example_config.json
+    wdp --config weather_data_processing/example_config.json
 
     # Run specific step only
-    python run_pipeline.py --config configs/example_config.json --step geographic
+    wdp --config weather_data_processing/example_config.json --step geographic
 
     # Verbose mode
-    python run_pipeline.py --config configs/example_config.json --verbose
+    wdp --config weather_data_processing/example_config.json --verbose
 
     # Dry run (validate config without executing)
-    python run_pipeline.py --config configs/example_config.json --dry-run
+    wdp --config weather_data_processing/example_config.json --dry-run
 """
 
 import argparse
@@ -51,16 +53,16 @@ def parse_args():
         epilog="""
 Examples:
   # Run full pipeline
-  python run_pipeline.py --config configs/example_config.json
+  wdp --config weather_data_processing/example_config.json
 
   # Run geographic step only
-  python run_pipeline.py --config configs/example_config.json --step geographic
+  wdp --config weather_data_processing/example_config.json --step geographic
 
   # Verbose logging to console
-  python run_pipeline.py --config configs/example_config.json --verbose
+  wdp --config weather_data_processing/example_config.json --verbose
 
   # Validate configuration without running
-  python run_pipeline.py --config configs/example_config.json --dry-run
+  wdp --config weather_data_processing/example_config.json --dry-run
         """
     )
 
@@ -105,7 +107,7 @@ def print_banner(logger):
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
 ║      WEATHER DATA PROCESSING PIPELINE                         ║
-║      ERA5 → Half-Hourly → Aggregated Time-Series             ║
+║      ERA5 → Half-Hourly Interpolated Time-Series             ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
     """
@@ -263,23 +265,51 @@ def run_masking_step(config: PipelineConfig, grib_dir: Optional[Path], logger, m
     return all_results
 
 
+# =============================================================================
+# ERA5 Variable Classifications (shortnames only)
+# =============================================================================
 
-_ERA5_STATIC       = ["frac_in_region"]
-_ERA5_INTENSIVE    = ["u10", "v10", "u100", "v100", "t2m", "tcc", "hcc", "mcc",
-                      "lcc", "kx", "cvh", "cvl", "lai_hv", "lai_lv"]
-_ERA5_RATE_SHAPED  = ["ssr", "ssrc", "ssrd", "ssrdc", "str", "strc", "strd",
-                      "strdc", "tsr", "tsrc", "ttr", "ttrc", "cdir", "fdir", "uvb"]
-_ERA5_EVEN_SPLIT   = ["tp"]
-_ERA5_WIND_PAIRS   = {"10m": ("u10", "v10"), "100m": ("u100", "v100")}
+_ERA5_STATIC = ["frac_in_region"]
+
+_ERA5_INTENSIVE = [
+    "u10", "v10", "u100", "v100",
+    "t2m",
+    "tcc", "hcc", "mcc", "lcc",
+    "kx",
+    "cvh", "cvl",
+    "lai_hv", "lai_lv",
+]
+
+_ERA5_RATE_SHAPED = [
+    "ssr", "ssrc", "ssrd", "ssrdc",
+    "str", "strc", "strd", "strdc",
+    "tsr", "tsrc",
+    "ttr", "ttrc",
+    "cdir", "fdir",
+    "uvb",
+]
+
+_ERA5_EVEN_SPLIT = ["tp"]
+
+_ERA5_WIND_PAIRS = {
+    "10m": ("u10", "v10"),
+    "100m": ("u100", "v100"),
+}
 
 
 def run_consolidation_step(config: PipelineConfig, logger) -> dict:
+    """Execute Step 3: Consolidation."""
     base = data_dir(create=True)
     interim = resolve_under(base, config.data_paths.interim_dir)
     input_dir = interim / "masked"
     if not input_dir.exists():
         raise FileNotFoundError(f"Masked parquet directory not found: {input_dir}. Run --step masking first.")
-    modes = config.temporal_partitioning.modes if config.temporal_partitioning else ["annual"]
+
+    # Get consolidation modes from config (file partitioning, not temporal aggregation)
+    modes = ["annual"]  # Default
+    if config.consolidation:
+        modes = config.consolidation.modes
+
     pipeline = ConsolidationPipeline(
         input_dir=input_dir,
         output_dir=interim / "consolidation" / "consolidated",
@@ -292,12 +322,17 @@ def run_consolidation_step(config: PipelineConfig, logger) -> dict:
 
 
 def run_temporal_step(config: PipelineConfig, logger) -> dict:
+    """Execute Step 4: Temporal Interpolation (hourly → half-hourly)."""
     base = data_dir(create=True)
     interim = resolve_under(base, config.data_paths.interim_dir)
     input_dir = interim / "consolidation" / "consolidated"
     if not input_dir.exists():
         raise FileNotFoundError(f"Consolidated parquet directory not found: {input_dir}. Run --step consolidation first.")
-    dt_unit = config.temporal.interpolation.datetime_unit if (config.temporal and config.temporal.interpolation) else "us"
+
+    dt_unit = "us"
+    if config.temporal and config.temporal.interpolation:
+        dt_unit = config.temporal.interpolation.datetime_unit
+
     pipeline = TemporalPipeline(
         input_dir=input_dir,
         output_dir=interim / "interpolated" / "boundary_fixed",
@@ -315,22 +350,20 @@ def run_temporal_step(config: PipelineConfig, logger) -> dict:
 
 
 def run_aggregation_step(config: PipelineConfig, logger) -> dict:
+    """Execute Step 5: Spatial Aggregation (half-hourly resolution preserved)."""
     base = data_dir(create=True)
     interim = resolve_under(base, config.data_paths.interim_dir)
     input_dir = interim / "interpolated" / "boundary_fixed"
     if not input_dir.exists():
         raise FileNotFoundError(f"Interpolated directory not found: {input_dir}. Run --step temporal first.")
+
     processed = resolve_under(base, config.data_paths.processed_dir)
     agg_cfg = config.aggregation
+
     pipeline = AggregationPipeline(
         input_dir=input_dir,
         output_dir=processed,
         aggregation_levels=[agg_cfg.spatial.level if agg_cfg else "ADM0"],
-        temporal_modes=(
-            config.temporal_partitioning.modes
-            if config.temporal_partitioning
-            else ["annual"]
-        ),
         weight_by_area=agg_cfg.spatial.weight_by_area if agg_cfg else True,
         logger=logger,
         intensive_vars=_ERA5_INTENSIVE,
@@ -358,11 +391,11 @@ def run_full_pipeline(config: PipelineConfig, grib_dir: Optional[Path], logger):
     # Step 3: Consolidation
     results["consolidation"] = run_consolidation_step(config, logger)
 
-    # Step 4: Temporal interpolation
+    # Step 4: Temporal interpolation (hourly → half-hourly)
     if config.temporal is not None:
         results["temporal"] = run_temporal_step(config, logger)
 
-    # Step 5: Aggregation
+    # Step 5: Spatial aggregation (half-hourly preserved)
     if config.aggregation is not None:
         results["aggregation"] = run_aggregation_step(config, logger)
 
@@ -451,9 +484,9 @@ def main():
         if config.geographic:
             logger.info("  ✓ Geographic", force=True)
         if config.temporal:
-            logger.info("  ✓ Temporal", force=True)
+            logger.info("  ✓ Temporal (interpolation to half-hourly)", force=True)
         if config.aggregation:
-            logger.info("  ✓ Aggregation", force=True)
+            logger.info("  ✓ Aggregation (spatial only, half-hourly preserved)", force=True)
         logger.info("", force=True)
         logger.info("Dry run complete (no processing executed)", force=True)
         return 0
@@ -506,6 +539,7 @@ def main():
     logger.info("PIPELINE COMPLETE", force=True)
     logger.info("=" * 72, force=True)
     logger.info(f"  Total time: {t_elapsed:.2f}s", force=True)
+    logger.info("  Output: Half-hourly resolution (no temporal aggregation)", force=True)
     logger.info("  Status: SUCCESS ✓", force=True)
     logger.info("=" * 72, force=True)
     logger.info("", force=True)

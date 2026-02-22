@@ -22,6 +22,8 @@ Key Features
 - ERA5 backward-looking timestamp convention
 - Year boundary handling
 - Lazy evaluation for memory efficiency
+
+All variable names use ERA5 shortnames (e.g., t2m, ssr, tp).
 """
 
 from __future__ import annotations
@@ -37,7 +39,7 @@ from ..utils.logging import VerboseLogger
 
 
 # =============================================================================
-# Variable Classifications
+# Variable Classifications (ERA5 shortnames)
 # =============================================================================
 
 # Static fields (forward-fill, no interpolation)
@@ -45,56 +47,56 @@ DEFAULT_STATIC_COLS = [
     "frac_in_region",
 ]
 
-# Intensive fields (midpoint average)
+# Intensive fields (midpoint average) - ERA5 shortnames
 DEFAULT_INTENSIVE_COLS = [
-    "temperature_2m",  # or "2t"
-    "total_cloud_cover",
-    "high_cloud_cover",
-    "medium_cloud_cover",
-    "low_cloud_cover",
-    "k_index",
-    "wind_u_10m",      # or "10u"
-    "wind_v_10m",      # or "10v"
-    "wind_u_100m",     # or "100u"
-    "wind_v_100m",     # or "100v"
-    "high_vegetation_cover",
-    "low_vegetation_cover",
-    "leaf_area_index_high_vegetation",
-    "leaf_area_index_low_vegetation",
+    "t2m",      # 2m temperature
+    "tcc",      # total cloud cover
+    "hcc",      # high cloud cover
+    "mcc",      # medium cloud cover
+    "lcc",      # low cloud cover
+    "kx",       # K-index
+    "u10",      # 10m u-wind
+    "v10",      # 10m v-wind
+    "u100",     # 100m u-wind
+    "v100",     # 100m v-wind
+    "cvh",      # high vegetation cover
+    "cvl",      # low vegetation cover
+    "lai_hv",   # leaf area index high vegetation
+    "lai_lv",   # leaf area index low vegetation
 ]
 
-# Extensive radiation fields (rate-shaped split)
-DEFAULT_SOLAR_RATE_SHAPED_COLS = [
-    "surface_direct_short_wave_radiation_clear_sky",
-    "surface_direct_short_wave_solar_radiation",
-    "surface_net_short_wave_solar_radiation",
-    "surface_net_short_wave_solar_radiation_clear_sky",
-    "surface_short_wave_solar_radiation_downwards",
-    "surface_short_wave_solar_radiation_downward_clear_sky",
-    "surface_net_long_wave_thermal_radiation",
-    "surface_net_long_wave_thermal_radiation_clear_sky",
-    "surface_long_wave_thermal_radiation_downwards",
-    "surface_long_wave_thermal_radiation_downward_clear_sky",
-    "top_net_short_wave_solar_radiation",
-    "top_net_short_wave_solar_radiation_clear_sky",
-    "top_net_long_wave_thermal_radiation",
-    "top_net_long_wave_thermal_radiation_clear_sky",
-    "surface_downward_uv_radiation",
+# Extensive radiation fields (rate-shaped split) - ERA5 shortnames
+DEFAULT_RATE_SHAPED_COLS = [
+    "ssrdc",    # surface solar radiation downward clear-sky
+    "cdir",     # clear-sky direct solar radiation
+    "ssr",      # surface net solar radiation
+    "ssrc",     # surface net solar radiation clear-sky
+    "ssrd",     # surface solar radiation downwards
+    "fdir",     # direct solar radiation
+    "str",      # surface net thermal radiation
+    "strc",     # surface net thermal radiation clear-sky
+    "strd",     # surface thermal radiation downwards
+    "strdc",    # surface thermal radiation downward clear-sky
+    "tsr",      # top net solar radiation
+    "tsrc",     # top net solar radiation clear-sky
+    "ttr",      # top net thermal radiation
+    "ttrc",     # top net thermal radiation clear-sky
+    "uvb",      # downward UV radiation at surface
 ]
 
-# Extensive precipitation fields (even-split)
-DEFAULT_PRECIP_EVEN_SPLIT_COLS = [
-    "total_precipitation",
+# Extensive precipitation fields (even-split) - ERA5 shortnames
+DEFAULT_EVEN_SPLIT_COLS = [
+    "tp",       # total precipitation
 ]
 
-# Columns to clamp to [0, 1] after interpolation
+# Columns to clamp to [0, 1] after interpolation - ERA5 shortnames
 DEFAULT_CLAMP_COLS = [
-    "total_cloud_cover",
-    "high_cloud_cover",
-    "medium_cloud_cover",
-    "low_cloud_cover",
-    "high_vegetation_cover",
-    "low_vegetation_cover",
+    "tcc",      # total cloud cover
+    "hcc",      # high cloud cover
+    "mcc",      # medium cloud cover
+    "lcc",      # low cloud cover
+    "cvh",      # high vegetation cover
+    "cvl",      # low vegetation cover
 ]
 
 
@@ -120,6 +122,8 @@ class InterpolationResult:
 class TemporalInterpolator:
     """
     Interpolate hourly data to half-hourly using appropriate methods.
+
+    All variable names use ERA5 shortnames (t2m, ssr, tp, etc.).
 
     Parameters
     ----------
@@ -167,8 +171,8 @@ class TemporalInterpolator:
         self.timestamp_col = timestamp_col
         self.static_cols = static_cols or DEFAULT_STATIC_COLS
         self.intensive_cols = intensive_cols or DEFAULT_INTENSIVE_COLS
-        self.rate_shaped_cols = rate_shaped_cols or DEFAULT_SOLAR_RATE_SHAPED_COLS
-        self.even_split_cols = even_split_cols or DEFAULT_PRECIP_EVEN_SPLIT_COLS
+        self.rate_shaped_cols = rate_shaped_cols or DEFAULT_RATE_SHAPED_COLS
+        self.even_split_cols = even_split_cols or DEFAULT_EVEN_SPLIT_COLS
         self.clamp_cols = clamp_cols or DEFAULT_CLAMP_COLS
         self.datetime_unit = datetime_unit
         self.logger = logger or VerboseLogger("temporal_interpolator", verbose=False)
@@ -199,36 +203,36 @@ class TemporalInterpolator:
 
         return lf_next
 
-    def _interpolate_static(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+    def _interpolate_static(self, lf: pl.LazyFrame, static_present: List[str]) -> pl.LazyFrame:
         """Generate half-hourly rows for static fields (forward-fill)."""
         key_cols = self.group_cols + [self.timestamp_col]
 
         # Current hour (no change needed)
         first_half = lf.select(
             [pl.col(c) for c in key_cols] +
-            [pl.col(c) for c in self.static_cols]
+            [pl.col(c) for c in static_present]
         )
 
         # Next half-hour (same timestamp + 30 min)
         second_half = lf.select(
             [pl.col(c) for c in self.group_cols] +
             [(pl.col(self.timestamp_col) + pl.duration(minutes=30)).alias(self.timestamp_col)] +
-            [pl.col(c) for c in self.static_cols]
+            [pl.col(c) for c in static_present]
         )
 
         return pl.concat([first_half, second_half])
 
-    def _interpolate_intensive(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+    def _interpolate_intensive(self, lf: pl.LazyFrame, intensive_present: List[str]) -> pl.LazyFrame:
         """Generate half-hourly rows for intensive fields (midpoint average)."""
         key_cols = self.group_cols + [self.timestamp_col]
 
         # Attach next values
-        lf_next = self._attach_next(lf, self.intensive_cols)
+        lf_next = self._attach_next(lf, intensive_present)
 
         # First half: current value unchanged
         first_half = lf_next.select(
             [pl.col(c) for c in key_cols] +
-            [pl.col(c) for c in self.intensive_cols]
+            [pl.col(c) for c in intensive_present]
         )
 
         # Second half: midpoint average
@@ -237,13 +241,13 @@ class TemporalInterpolator:
             [(pl.col(self.timestamp_col) + pl.duration(minutes=30)).alias(self.timestamp_col)] +
             [
                 ((pl.col(c) + pl.col(f"{c}__next")) / 2.0).alias(c)
-                for c in self.intensive_cols
+                for c in intensive_present
             ]
         )
 
         return pl.concat([first_half, second_half])
 
-    def _interpolate_rate_shaped(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+    def _interpolate_rate_shaped(self, lf: pl.LazyFrame, rate_shaped_present: List[str]) -> pl.LazyFrame:
         """
         Generate half-hourly rows for radiation fields (rate-shaped, energy-conserving).
 
@@ -260,10 +264,10 @@ class TemporalInterpolator:
         lf_extended = lf_sorted.with_columns(
             [
                 pl.col(c).shift(1).over(self.group_cols).alias(f"{c}__prev")
-                for c in self.rate_shaped_cols
+                for c in rate_shaped_present
             ] + [
                 pl.col(c).shift(-1).over(self.group_cols).alias(f"{c}__next")
-                for c in self.rate_shaped_cols
+                for c in rate_shaped_present
             ] + [
                 pl.col(self.timestamp_col).shift(-1).over(self.group_cols).alias(f"{self.timestamp_col}__next")
             ]
@@ -283,7 +287,7 @@ class TemporalInterpolator:
         first_half_exprs = []
         second_half_exprs = []
 
-        for c in self.rate_shaped_cols:
+        for c in rate_shaped_present:
             # Provisional first half (weighted by proximity)
             e1_prov = (
                 pl.when(pl.col(f"{c}__prev").is_not_null())
@@ -319,7 +323,7 @@ class TemporalInterpolator:
 
         return pl.concat([first_half, second_half])
 
-    def _interpolate_even_split(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+    def _interpolate_even_split(self, lf: pl.LazyFrame, even_split_present: List[str]) -> pl.LazyFrame:
         """Generate half-hourly rows for precipitation (even-split)."""
         key_cols = self.group_cols + [self.timestamp_col]
 
@@ -328,14 +332,14 @@ class TemporalInterpolator:
         # First half
         first_half = lf.select(
             [pl.col(c) for c in key_cols] +
-            [(pl.col(c) / 2.0).alias(c) for c in self.even_split_cols]
+            [(pl.col(c) / 2.0).alias(c) for c in even_split_present]
         )
 
         # Second half
         second_half = lf.select(
             [pl.col(c) for c in self.group_cols] +
             [(pl.col(self.timestamp_col) + pl.duration(minutes=30)).alias(self.timestamp_col)] +
-            [(pl.col(c) / 2.0).alias(c) for c in self.even_split_cols]
+            [(pl.col(c) / 2.0).alias(c) for c in even_split_present]
         )
 
         return pl.concat([first_half, second_half])
@@ -405,29 +409,25 @@ class TemporalInterpolator:
         # Build parts
         parts = []
 
-        # Static fields
+        # Static fields (including ADM columns)
         if static_present or adm_cols:
             all_static = static_present + adm_cols
-            self.static_cols = all_static  # Update temporarily
-            part = self._interpolate_static(lf)
+            part = self._interpolate_static(lf, all_static)
             parts.append(part)
 
         # Intensive fields
         if intensive_present:
-            self.intensive_cols = intensive_present  # Update temporarily
-            part = self._interpolate_intensive(lf)
+            part = self._interpolate_intensive(lf, intensive_present)
             parts.append(part)
 
         # Rate-shaped fields
         if rate_shaped_present:
-            self.rate_shaped_cols = rate_shaped_present  # Update temporarily
-            part = self._interpolate_rate_shaped(lf)
+            part = self._interpolate_rate_shaped(lf, rate_shaped_present)
             parts.append(part)
 
         # Even-split fields
         if even_split_present:
-            self.even_split_cols = even_split_present  # Update temporarily
-            part = self._interpolate_even_split(lf)
+            part = self._interpolate_even_split(lf, even_split_present)
             parts.append(part)
 
         # Merge all parts

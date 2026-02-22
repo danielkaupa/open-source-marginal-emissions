@@ -11,6 +11,8 @@ Schema Validation and Data Type Management
 Utilities for validating parquet schemas, managing data types, and ensuring
 data quality across the pipeline.
 
+All variable names use ERA5 shortnames (e.g., t2m, ssr, tp).
+
 Key Features
 ------------
 - Schema validation against reference schemas
@@ -41,7 +43,7 @@ DEFAULT_DROP_COLS = [
     "valid_time",
 ]
 
-# Target dtypes for common ERA5 variables and coordinates
+# Target dtypes for ERA5 variables (shortnames only) and coordinates
 DEFAULT_DTYPE_MAP: Dict[str, pl.DataType] = {
     # Coordinates
     "longitude": pl.Float32,
@@ -59,69 +61,55 @@ DEFAULT_DTYPE_MAP: Dict[str, pl.DataType] = {
     "adm2_name": pl.String,
     "adm2_code": pl.String,
 
-    # ERA5 shortnames (used in raw/interim files, before any renaming)
-    "2t": pl.Float64,       # 2m temperature
-    "tp": pl.Float64,       # Total precipitation
-    "10u": pl.Float64,      # 10m U wind
-    "10v": pl.Float64,      # 10m V wind
-    "100u": pl.Float64,     # 100m U wind
-    "100v": pl.Float64,     # 100m V wind
-    "ssr": pl.Float64,      # Surface net solar radiation
-    "ssrc": pl.Float64,     # Surface net solar radiation clear-sky
-    "ssrdc": pl.Float64,    # Surface direct solar radiation clear-sky
-    "ssrd": pl.Float64,     # Surface downward solar radiation
-    "fdir": pl.Float64,     # Total sky direct solar radiation
-    "str": pl.Float64,      # Surface net thermal radiation
-    "strc": pl.Float64,     # Surface net thermal radiation clear-sky
-    "strdc": pl.Float64,    # Surface downward thermal radiation clear-sky
-    "strd": pl.Float64,     # Surface downward thermal radiation
-    "tsr": pl.Float64,      # Top net solar radiation
-    "tsrc": pl.Float64,     # Top net solar radiation clear-sky
-    "ttr": pl.Float64,      # Top net thermal radiation
-    "ttrc": pl.Float64,     # Top net thermal radiation clear-sky
-    "cdir": pl.Float64,     # Clear-sky direct solar radiation
-    "uvb": pl.Float64,      # UV biologically active
-    "hcc": pl.Float64,      # High cloud cover
-    "lcc": pl.Float64,      # Low cloud cover
-    "mcc": pl.Float64,      # Medium cloud cover
-    "tcc": pl.Float64,      # Total cloud cover
-    "cvh": pl.Float64,      # High vegetation cover
-    "cvl": pl.Float64,      # Low vegetation cover
-    "lai_hv": pl.Float64,   # Leaf area index (high vegetation)
-    "lai_lv": pl.Float64,   # Leaf area index (low vegetation)
-    "kx": pl.Float64,       # K index
+    # ERA5 shortnames - Temperature
+    "t2m": pl.Float32,      # 2m temperature
 
-    # Long names (used after interpolation / if renaming is applied)
-    "temperature_2m": pl.Float64,
-    "total_precipitation": pl.Float64,
-    "wind_u_10m": pl.Float64,
-    "wind_v_10m": pl.Float64,
-    "wind_u_100m": pl.Float64,
-    "wind_v_100m": pl.Float64,
-    "surface_net_short_wave_solar_radiation": pl.Float64,
-    "surface_net_short_wave_solar_radiation_clear_sky": pl.Float64,
-    "surface_direct_short_wave_radiation_clear_sky": pl.Float64,
-    "surface_short_wave_solar_radiation_downwards": pl.Float64,
-    "surface_direct_short_wave_solar_radiation": pl.Float64,
-    "surface_net_long_wave_thermal_radiation": pl.Float64,
-    "surface_net_long_wave_thermal_radiation_clear_sky": pl.Float64,
-    "surface_long_wave_thermal_radiation_downwards": pl.Float64,
-    "surface_long_wave_thermal_radiation_downward_clear_sky": pl.Float64,
-    "surface_short_wave_solar_radiation_downward_clear_sky": pl.Float64,
-    "top_net_short_wave_solar_radiation": pl.Float64,
-    "top_net_short_wave_solar_radiation_clear_sky": pl.Float64,
-    "top_net_long_wave_thermal_radiation": pl.Float64,
-    "top_net_long_wave_thermal_radiation_clear_sky": pl.Float64,
-    "surface_downward_uv_radiation": pl.Float64,
-    "total_cloud_cover": pl.Float64,
-    "high_cloud_cover": pl.Float64,
-    "medium_cloud_cover": pl.Float64,
-    "low_cloud_cover": pl.Float64,
-    "high_vegetation_cover": pl.Float64,
-    "low_vegetation_cover": pl.Float64,
-    "leaf_area_index_high_vegetation": pl.Float64,
-    "leaf_area_index_low_vegetation": pl.Float64,
-    "k_index": pl.Float64,
+    # ERA5 shortnames - Precipitation
+    "tp": pl.Float32,       # Total precipitation
+
+    # ERA5 shortnames - Wind components
+    "u10": pl.Float32,      # 10m U wind
+    "v10": pl.Float32,      # 10m V wind
+    "u100": pl.Float32,     # 100m U wind
+    "v100": pl.Float32,     # 100m V wind
+
+    # ERA5 shortnames - Solar radiation
+    "ssr": pl.Float32,      # Surface net solar radiation
+    "ssrc": pl.Float32,     # Surface net solar radiation clear-sky
+    "ssrdc": pl.Float32,    # Surface solar radiation downward clear-sky
+    "ssrd": pl.Float32,     # Surface downward solar radiation
+    "fdir": pl.Float32,     # Total sky direct solar radiation
+    "cdir": pl.Float32,     # Clear-sky direct solar radiation
+
+    # ERA5 shortnames - Thermal radiation
+    "str": pl.Float32,      # Surface net thermal radiation
+    "strc": pl.Float32,     # Surface net thermal radiation clear-sky
+    "strdc": pl.Float32,    # Surface thermal radiation downward clear-sky
+    "strd": pl.Float32,     # Surface downward thermal radiation
+
+    # ERA5 shortnames - Top-of-atmosphere radiation
+    "tsr": pl.Float32,      # Top net solar radiation
+    "tsrc": pl.Float32,     # Top net solar radiation clear-sky
+    "ttr": pl.Float32,      # Top net thermal radiation
+    "ttrc": pl.Float32,     # Top net thermal radiation clear-sky
+
+    # ERA5 shortnames - UV radiation
+    "uvb": pl.Float32,      # UV biologically active
+
+    # ERA5 shortnames - Cloud cover
+    "tcc": pl.Float32,      # Total cloud cover
+    "hcc": pl.Float32,      # High cloud cover
+    "mcc": pl.Float32,      # Medium cloud cover
+    "lcc": pl.Float32,      # Low cloud cover
+
+    # ERA5 shortnames - Vegetation
+    "cvh": pl.Float32,      # High vegetation cover
+    "cvl": pl.Float32,      # Low vegetation cover
+    "lai_hv": pl.Float32,   # Leaf area index (high vegetation)
+    "lai_lv": pl.Float32,   # Leaf area index (low vegetation)
+
+    # ERA5 shortnames - Other
+    "kx": pl.Float32,       # K index
 }
 
 
