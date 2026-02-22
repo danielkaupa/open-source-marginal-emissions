@@ -5,10 +5,11 @@
 # =============================================================================
 
 #PBS -N wdp_step1_geographic
-#PBS -l select=1:ncpus=1:mem=8gb
+# Request 1 chunk (node), 1 CPU, 1 process, 8 GB RAM
+#PBS -l select=1:ncpus=1:mpiprocs=1:mem=8gb
 #PBS -l walltime=01:00:00
 #PBS -j n
-#PBS -V
+
 
 set -euo pipefail
 
@@ -33,33 +34,40 @@ echo "==========================================================================
 echo ""
 
 # ------------------------------------------------------------------------------
-# Environment / modules (adjust to your cluster)
+# Environment / modules
 # ------------------------------------------------------------------------------
 module purge || true
 module load tools/prod || true
-module load miniforge/3 || true
+# IMPORTANT: since you want to rely on your own miniforge, do NOT load the module miniforge.
+# module load miniforge/3 || true
 
-# Activate conda env (adjust paths/env name if needed)
-if command -v conda >/dev/null 2>&1; then
-  eval "$(conda shell.bash hook)"
-elif [ -x "$HOME/miniforge3/bin/conda" ]; then
+# Use your user-installed miniforge
+if [ -x "$HOME/miniforge3/bin/conda" ]; then
   eval "$("$HOME/miniforge3/bin/conda" shell.bash hook)"
+elif command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+else
+  echo "ERROR: conda not found (neither ~/miniforge3/bin/conda nor conda on PATH)."
+  exit 2
 fi
 
 conda activate osme
 
-# Avoid accidental thread oversubscription
+# ------------------------------------------------------------------------------
+# Thread Control (ensure you truly only use the 1 CPU you requested)
+# ------------------------------------------------------------------------------
 export OMP_NUM_THREADS=1
+export OMP_DYNAMIC=FALSE
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
+export NUMEXPR_MAX_THREADS=1
 export POLARS_MAX_THREADS=1
 export RAYON_NUM_THREADS=1
 
 # ------------------------------------------------------------------------------
 # Configuration (robust default)
 # ------------------------------------------------------------------------------
-# Preferred location (from repo root based on your zip)
 CONFIG_FILE="${CONFIG_FILE:-configs/weather_data_processing/config.json}"
 
 # Fallback if someone runs from inside the package directory
