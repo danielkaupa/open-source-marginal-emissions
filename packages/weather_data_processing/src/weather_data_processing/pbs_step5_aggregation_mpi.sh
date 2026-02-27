@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N weather_step5_aggregation_mpi
-#PBS -l select=1:ncpus=8:mpiprocs=8:mem=100gb
+#PBS -l select=1:ncpus=8:mpiprocs=8:mem=800gb
 #PBS -l walltime=00:30:00
 #PBS -j n
 

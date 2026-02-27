@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N weather_step4_temporal_mpi
-#PBS -l select=1:ncpus=8:mpiprocs=8:mem=100gb
+#PBS -l select=1:ncpus=9:mpiprocs=9:mem=850gb
 #PBS -l walltime=02:00:00
 #PBS -j n
 # NOTE: place=scatter is only relevant for multinode MPI; harmless but unnecessary on 1 node.
@@ -17,7 +17,7 @@
 # Resources:
 #   - 1 node × 8 cores = 8 MPI ranks
 #   - Each rank processes 1-2 files
-#   - Memory: 100GB per node
+#   - Memory: 500GB per node
 #
 # Expected runtime: 1-2 hours for ~8 annual files
 # =============================================================================

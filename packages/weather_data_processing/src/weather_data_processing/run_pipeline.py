@@ -39,6 +39,7 @@ from weather_data_processing.pipeline.step2_masking import MaskingPipeline, HAS_
 from weather_data_processing.pipeline.step3_consolidation import ConsolidationPipeline
 from weather_data_processing.pipeline.step4_temporal import TemporalPipeline
 from weather_data_processing.pipeline.step5_aggregation import AggregationPipeline
+from weather_data_processing.pipeline.step6_timezone import TimezonePipeline
 from weather_data_processing.utils.parallel import detect_environment
 from weather_data_processing.utils.logging import setup_logger
 
@@ -75,7 +76,7 @@ Examples:
 
     parser.add_argument(
         "--step",
-        choices=["geographic", "masking", "consolidation", "temporal", "aggregation", "all"],
+        choices=["geographic", "masking", "consolidation", "temporal", "aggregation", "timezone", "all"],
         default="all",
         help="Pipeline step to run (default: all)"
     )
@@ -176,6 +177,7 @@ def run_masking_step(config: PipelineConfig, grib_dir: Optional[Path], logger, m
     logger.info("", force=True)
     logger.info("#" * 72, force=True)
     logger.info("# EXECUTING STEP 2: GRIB MASKING", force=True)
+    logger.info("#  (Output: hourly masked parquet files)", force=True)
     logger.info("#" * 72, force=True)
     logger.info("", force=True)
 
@@ -298,7 +300,14 @@ _ERA5_WIND_PAIRS = {
 
 
 def run_consolidation_step(config: PipelineConfig, logger) -> dict:
-    """Execute Step 3: Consolidation."""
+    """Execute Step 3: Consolidation (hourly files consolidated by year)."""
+    logger.info("", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("# EXECUTING STEP 3: CONSOLIDATION", force=True)
+    logger.info("#  (Output: consolidated hourly parquet files by year)", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("", force=True)
+
     base = data_dir(create=True)
     interim = resolve_under(base, config.data_paths.interim_dir)
     input_dir = interim / "masked"
@@ -323,6 +332,13 @@ def run_consolidation_step(config: PipelineConfig, logger) -> dict:
 
 def run_temporal_step(config: PipelineConfig, logger) -> dict:
     """Execute Step 4: Temporal Interpolation (hourly → half-hourly)."""
+    logger.info("", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("# EXECUTING STEP 4: TEMPORAL INTERPOLATION", force=True)
+    logger.info("#  (Input: hourly → Output: half-hourly)", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("", force=True)
+
     base = data_dir(create=True)
     interim = resolve_under(base, config.data_paths.interim_dir)
     input_dir = interim / "consolidation" / "consolidated"
@@ -351,6 +367,13 @@ def run_temporal_step(config: PipelineConfig, logger) -> dict:
 
 def run_aggregation_step(config: PipelineConfig, logger) -> dict:
     """Execute Step 5: Spatial Aggregation (half-hourly resolution preserved)."""
+    logger.info("", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("# EXECUTING STEP 5: SPATIAL AGGREGATION", force=True)
+    logger.info("#  (Input: half-hourly gridded → Output: half-hourly regional)", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("", force=True)
+
     base = data_dir(create=True)
     interim = resolve_under(base, config.data_paths.interim_dir)
     input_dir = interim / "interpolated" / "boundary_fixed"
@@ -373,6 +396,46 @@ def run_aggregation_step(config: PipelineConfig, logger) -> dict:
     return pipeline.run(use_mpi=config.parallelization.prefer_mpi and HAS_MPI)
 
 
+def run_timezone_step(config: PipelineConfig, logger) -> dict:
+    """Execute Step 6: Timezone Conversion (UTC → target timezone)."""
+    logger.info("", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("# EXECUTING STEP 6: TIMEZONE CONVERSION", force=True)
+    logger.info("#  (UTC → target timezone)", force=True)
+    logger.info("#" * 72, force=True)
+    logger.info("", force=True)
+
+    base = data_dir(create=True)
+    processed = resolve_under(base, config.data_paths.processed_dir)
+    
+    # Get aggregation level to find the right input directory
+    agg_cfg = config.aggregation
+    level = agg_cfg.spatial.level if agg_cfg else "ADM0"
+    
+    input_dir = processed / level
+    if not input_dir.exists():
+        raise FileNotFoundError(f"Aggregated directory not found: {input_dir}. Run --step aggregation first.")
+
+    # Get timezone from config
+    target_tz = "UTC"
+    keep_utc = False
+    if config.temporal and config.temporal.timezone:
+        target_tz = config.temporal.timezone.target_timezone
+        keep_utc = config.temporal.timezone.keep_utc_column
+
+    # Output to final directory
+    final_dir = processed / level
+
+    pipeline = TimezonePipeline(
+        input_dir=input_dir,
+        output_dir=final_dir,
+        target_timezone=target_tz,
+        keep_utc_column=keep_utc,
+        logger=logger,
+    )
+    return pipeline.run(use_mpi=config.parallelization.prefer_mpi and HAS_MPI)
+
+
 def run_full_pipeline(config: PipelineConfig, grib_dir: Optional[Path], logger):
     """Execute the complete pipeline."""
     results = {}
@@ -381,14 +444,14 @@ def run_full_pipeline(config: PipelineConfig, grib_dir: Optional[Path], logger):
     if config.geographic is not None:
         results["geographic"] = run_geographic_step(config, grib_dir, logger)
 
-    # Step 2: Masking
+    # Step 2: Masking (produces hourly parquet)
     if config.geographic is not None:
         # Pass in-memory mask results from Step 1 so we don't need to re-discover files
         geo_result = results.get("geographic", {})
         mask_results = geo_result.get("mask_result") if geo_result else None
         results["masking"] = run_masking_step(config, grib_dir, logger, mask_results=mask_results)
 
-    # Step 3: Consolidation
+    # Step 3: Consolidation (consolidates hourly files by year)
     results["consolidation"] = run_consolidation_step(config, logger)
 
     # Step 4: Temporal interpolation (hourly → half-hourly)
@@ -398,6 +461,10 @@ def run_full_pipeline(config: PipelineConfig, grib_dir: Optional[Path], logger):
     # Step 5: Spatial aggregation (half-hourly preserved)
     if config.aggregation is not None:
         results["aggregation"] = run_aggregation_step(config, logger)
+
+    # Step 6: Timezone conversion (UTC → target timezone)
+    if config.temporal is not None and config.temporal.timezone.target_timezone != "UTC":
+        results["timezone"] = run_timezone_step(config, logger)
 
     return results
 
@@ -482,11 +549,15 @@ def main():
         logger.info("", force=True)
         logger.info("Steps configured:", force=True)
         if config.geographic:
-            logger.info("  ✓ Geographic", force=True)
+            logger.info("  ✓ Step 1: Geographic", force=True)
+            logger.info("  ✓ Step 2: Masking (hourly parquet)", force=True)
+        logger.info("  ✓ Step 3: Consolidation (hourly, by year)", force=True)
         if config.temporal:
-            logger.info("  ✓ Temporal (interpolation to half-hourly)", force=True)
+            logger.info("  ✓ Step 4: Temporal interpolation (hourly → half-hourly)", force=True)
         if config.aggregation:
-            logger.info("  ✓ Aggregation (spatial only, half-hourly preserved)", force=True)
+            logger.info("  ✓ Step 5: Spatial aggregation (half-hourly preserved)", force=True)
+        if config.temporal and config.temporal.timezone.target_timezone != "UTC":
+            logger.info(f"  ✓ Step 6: Timezone conversion (UTC → {config.temporal.timezone.target_timezone})", force=True)
         logger.info("", force=True)
         logger.info("Dry run complete (no processing executed)", force=True)
         return 0
@@ -512,6 +583,8 @@ def main():
             results = {"temporal": run_temporal_step(config, logger)}
         elif args.step == "aggregation":
             results = {"aggregation": run_aggregation_step(config, logger)}
+        elif args.step == "timezone":
+            results = {"timezone": run_timezone_step(config, logger)}
         else:
             logger.error(f"Step '{args.step}' not yet implemented", force=True)
             return 1
