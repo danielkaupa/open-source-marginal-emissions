@@ -12,10 +12,11 @@ Step 4: Temporal Interpolation Pipeline
 Complete temporal processing pipeline:
 1. **Stage 4a**: Interpolate hourly → half-hourly
 2. **Stage 4b**: Sort and cleanup
-3. **Stage 4c**: Fix year boundaries (Dec 31 23:30)
+3. **Stage 4c**: Fix year boundaries (Dec 31 23:00, 23:30, Jan 1 00:00)
 4. **Stage 4d**: Validate temporal data
 
 Supports both sequential and MPI parallelization (distributes years across ranks).
+Both stage 4a and 4c are parallelizable — each file/year is independent.
 """
 
 from __future__ import annotations
@@ -184,29 +185,55 @@ class TemporalPipeline:
     def _run_stage4c_boundary_fix(
         self,
         halfhourly_files: List[Path],
-        fixer: YearBoundaryFixer
+        fixer: YearBoundaryFixer,
+        my_indices: Optional[List[int]] = None,
     ) -> List[BoundaryFixResult]:
         """
-        Stage 4c: Fix year boundaries (Dec 31 23:30).
+        Stage 4c: Fix year boundaries (Dec 31 23:00, 23:30, Jan 1 00:00).
+
+        Each year's fix reads from unfixed stage 4a outputs, so all fixes
+        are embarrassingly parallel.
+
+        Parameters
+        ----------
+        halfhourly_files : list of Path
+            Full sorted list of half-hourly files.
+        fixer : YearBoundaryFixer
+            Boundary fixer instance.
+        my_indices : list of int or None
+            Indices into halfhourly_files that this rank should process.
+            If None, processes all files sequentially.
 
         Returns
         -------
         list of BoundaryFixResult
-            Boundary fix results.
+            Boundary fix results for this rank's files.
         """
         self.logger.info("", force=True)
         self.logger.info("=" * 72, force=True)
         self.logger.info("STAGE 4c: YEAR BOUNDARY FIX", force=True)
         self.logger.info("=" * 72, force=True)
 
-        # Sort by year
-        sorted_files = sorted(halfhourly_files)
+        self.stage4c_dir.mkdir(parents=True, exist_ok=True)
 
-        results = fixer.process_year_sequence(
-            halfhourly_files=sorted_files,
-            output_dir=self.stage4c_dir,
-            overwrite=True
-        )
+        if my_indices is None:
+            my_indices = list(range(len(halfhourly_files)))
+
+        results = []
+        for idx in my_indices:
+            try:
+                result = fixer.process_single_file(
+                    index=idx,
+                    halfhourly_files=halfhourly_files,
+                    output_dir=self.stage4c_dir,
+                    overwrite=True,
+                )
+                if result:
+                    results.append(result)
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to fix boundary for {halfhourly_files[idx].name}: {e}"
+                )
 
         return results
 
@@ -356,7 +383,13 @@ class TemporalPipeline:
             static_cols=self.static_cols,
         )
 
-        fixer = YearBoundaryFixer(logger=self.logger)
+        fixer = YearBoundaryFixer(
+            logger=self.logger,
+            static_cols=self.static_cols,
+            intensive_cols=self.intensive_cols,
+            rate_shaped_cols=self.rate_shaped_cols,
+            even_split_cols=self.even_split_cols,
+        )
         validator = TemporalValidator(logger=self.logger)
 
         # ------------------------------------------------------------------
@@ -392,18 +425,30 @@ class TemporalPipeline:
             halfhourly_files = comm.bcast(halfhourly_files, root=0)
 
         # ------------------------------------------------------------------
-        # Stage 4c: Boundary Fix (sequential, rank 0 only)
+        # Stage 4c: Boundary Fix (parallel across ranks)
         # ------------------------------------------------------------------
-        if rank == 0:
-            results4c = self._run_stage4c_boundary_fix(halfhourly_files, fixer)
-            fixed_files = [r.output_file for r in results4c]
-        else:
-            results4c = None
-            fixed_files = None
+        sorted_hh_files = sorted(halfhourly_files)
+        my_fix_indices = [i for i in range(len(sorted_hh_files)) if i % size == rank]
+
+        results4c_local = self._run_stage4c_boundary_fix(
+            sorted_hh_files, fixer, my_indices=my_fix_indices
+        )
 
         if comm:
+            all_results4c = comm.gather(results4c_local, root=0)
             comm.Barrier()
+
+            if rank == 0:
+                results4c = [r for rlist in all_results4c for r in rlist if r]
+                fixed_files = sorted([r.output_file for r in results4c])
+            else:
+                results4c = None
+                fixed_files = None
+
             fixed_files = comm.bcast(fixed_files, root=0)
+        else:
+            results4c = results4c_local
+            fixed_files = sorted([r.output_file for r in results4c])
 
         # ------------------------------------------------------------------
         # Stage 4d: Validation (optional, rank 0 only)
