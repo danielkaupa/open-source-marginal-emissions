@@ -62,54 +62,54 @@ DEFAULT_DTYPE_MAP: Dict[str, pl.DataType] = {
     "adm2_code": pl.String,
 
     # ERA5 shortnames - Temperature
-    "t2m": pl.Float64,      # 2m temperature
+    "t2m": pl.Float32,      # 2m temperature
 
     # ERA5 shortnames - Precipitation
-    "tp": pl.Float64,       # Total precipitation
+    "tp": pl.Float32,       # Total precipitation
 
     # ERA5 shortnames - Wind components
-    "u10": pl.Float64,      # 10m U wind
-    "v10": pl.Float64,      # 10m V wind
-    "u100": pl.Float64,     # 100m U wind
-    "v100": pl.Float64,     # 100m V wind
+    "u10": pl.Float32,      # 10m U wind
+    "v10": pl.Float32,      # 10m V wind
+    "u100": pl.Float32,     # 100m U wind
+    "v100": pl.Float32,     # 100m V wind
 
     # ERA5 shortnames - Solar radiation
-    "ssr": pl.Float64,      # Surface net solar radiation
-    "ssrc": pl.Float64,     # Surface net solar radiation clear-sky
-    "ssrdc": pl.Float64,    # Surface solar radiation downward clear-sky
-    "ssrd": pl.Float64,     # Surface downward solar radiation
-    "fdir": pl.Float64,     # Total sky direct solar radiation
-    "cdir": pl.Float64,     # Clear-sky direct solar radiation
+    "ssr": pl.Float32,      # Surface net solar radiation
+    "ssrc": pl.Float32,     # Surface net solar radiation clear-sky
+    "ssrdc": pl.Float32,    # Surface solar radiation downward clear-sky
+    "ssrd": pl.Float32,     # Surface downward solar radiation
+    "fdir": pl.Float32,     # Total sky direct solar radiation
+    "cdir": pl.Float32,     # Clear-sky direct solar radiation
 
     # ERA5 shortnames - Thermal radiation
-    "str": pl.Float64,      # Surface net thermal radiation
-    "strc": pl.Float64,     # Surface net thermal radiation clear-sky
-    "strdc": pl.Float64,    # Surface thermal radiation downward clear-sky
-    "strd": pl.Float64,     # Surface downward thermal radiation
+    "str": pl.Float32,      # Surface net thermal radiation
+    "strc": pl.Float32,     # Surface net thermal radiation clear-sky
+    "strdc": pl.Float32,    # Surface thermal radiation downward clear-sky
+    "strd": pl.Float32,     # Surface downward thermal radiation
 
     # ERA5 shortnames - Top-of-atmosphere radiation
-    "tsr": pl.Float64,      # Top net solar radiation
-    "tsrc": pl.Float64,     # Top net solar radiation clear-sky
-    "ttr": pl.Float64,      # Top net thermal radiation
-    "ttrc": pl.Float64,     # Top net thermal radiation clear-sky
+    "tsr": pl.Float32,      # Top net solar radiation
+    "tsrc": pl.Float32,     # Top net solar radiation clear-sky
+    "ttr": pl.Float32,      # Top net thermal radiation
+    "ttrc": pl.Float32,     # Top net thermal radiation clear-sky
 
     # ERA5 shortnames - UV radiation
-    "uvb": pl.Float64,      # UV biologically active
+    "uvb": pl.Float32,      # UV biologically active
 
     # ERA5 shortnames - Cloud cover
-    "tcc": pl.Float64,      # Total cloud cover
-    "hcc": pl.Float64,      # High cloud cover
-    "mcc": pl.Float64,      # Medium cloud cover
-    "lcc": pl.Float64,      # Low cloud cover
+    "tcc": pl.Float32,      # Total cloud cover
+    "hcc": pl.Float32,      # High cloud cover
+    "mcc": pl.Float32,      # Medium cloud cover
+    "lcc": pl.Float32,      # Low cloud cover
 
     # ERA5 shortnames - Vegetation
-    "cvh": pl.Float64,      # High vegetation cover
-    "cvl": pl.Float64,      # Low vegetation cover
-    "lai_hv": pl.Float64,   # Leaf area index (high vegetation)
-    "lai_lv": pl.Float64,   # Leaf area index (low vegetation)
+    "cvh": pl.Float32,      # High vegetation cover
+    "cvl": pl.Float32,      # Low vegetation cover
+    "lai_hv": pl.Float32,   # Leaf area index (high vegetation)
+    "lai_lv": pl.Float32,   # Leaf area index (low vegetation)
 
     # ERA5 shortnames - Other
-    "kx": pl.Float64,       # K index
+    "kx": pl.Float32,       # K index
 }
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N weather_step4_temporal_mpi
-#PBS -l select=1:ncpus=9:mpiprocs=9:mem=850gb
+#PBS -l select=1:ncpus=9:mpiprocs=9:mem=1200gb
 #PBS -l walltime=02:00:00
 #PBS -j n
 # NOTE: place=scatter is only relevant for multinode MPI; harmless but unnecessary on 1 node.
@@ -101,8 +101,8 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 export NUMEXPR_MAX_THREADS=1
-export POLARS_MAX_THREADS=1
-export RAYON_NUM_THREADS=1
+export POLARS_MAX_THREADS=14
+export RAYON_NUM_THREADS=14
 
 # ------------------------------------------------------------------------------
 # MPI allocation info

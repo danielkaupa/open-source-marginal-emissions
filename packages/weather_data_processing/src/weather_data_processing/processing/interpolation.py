@@ -681,21 +681,28 @@ class TemporalInterpolator:
             halfhour_30_aligned.select(out_cols),   # :30 rows (first-half extensives)
         ]
 
-        final = pl.concat(frames, how="vertical_relaxed").sort(keys)
+        self.logger.info("  Collecting and sorting...", force=True)
+        final_df = pl.concat(frames, how="vertical_relaxed").sort(keys).collect()
 
         # =====================================================================
-        # 8. Write result (streaming)
+        # 8. Write result
         # =====================================================================
         os.makedirs(output_file.parent, exist_ok=True)
-        final.sink_parquet(str(output_file), compression="snappy", statistics=True)
+        final_df.write_parquet(str(output_file), compression="snappy", statistics=True)
 
         dt = time.perf_counter() - t_start
 
-        # Read back row count for result
-        rows_after = pl.scan_parquet(str(output_file)).select(pl.len()).collect().item()
+        rows_after = len(final_df)
 
-        # Check if year boundary issue exists
-        has_boundary = self._check_boundary_issue(output_file)
+        # Check if year boundary issue exists (use in-memory data, not re-read)
+        has_boundary = final_df.filter(
+            (pl.col(self.timestamp_col).dt.month() == 12)
+            & (pl.col(self.timestamp_col).dt.day() == 31)
+            & (pl.col(self.timestamp_col).dt.hour() == 23)
+            & (pl.col(self.timestamp_col).dt.minute() == 30)
+        ).height > 0
+
+        del final_df  # free memory before returning
 
         self.logger.info(
             f"  Complete: {rows_before:,} -> {rows_after:,} rows ({dt:.2f}s)",

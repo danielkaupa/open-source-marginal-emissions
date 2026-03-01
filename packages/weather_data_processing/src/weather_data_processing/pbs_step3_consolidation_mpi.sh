@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N weather_step3_consolidation_mpi
-#PBS -l select=2:ncpus=16:mpiprocs=16:mem=100gb
+#PBS -l select=2:ncpus=16:mpiprocs=16:mem=300gb
 #PBS -l walltime=01:00:00
 #PBS -l place=scatter
 #PBS -j n
@@ -99,8 +99,8 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 export NUMEXPR_MAX_THREADS=1
-export POLARS_MAX_THREADS=1
-export RAYON_NUM_THREADS=1
+export POLARS_MAX_THREADS=14
+export RAYON_NUM_THREADS=14
 
 # ------------------------------------------------------------------------------
 # MPI allocation info
